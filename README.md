@@ -15,23 +15,26 @@ or
 
 #### Initialize
 
-`
+```
 climb init
-Enter the root directory of your projects: ../my-services
+
+Enter the root directory of your projects: ~/my-services
+
 Enter a folder containing a docker-compose.yml file or nothing to exit: Service1
 Enter a folder containing a docker-compose.yml file or nothing to exit: Service2
 ....
 Enter a folder containing a docker-compose.yml file or nothing to exit: ServiceN
 Enter a folder containing a docker-compose.yml file or nothing to exit:
+
 Done!
 BYE BYE !!!"
-`
+```
 
 Now the tool is ready to use.
 
 #### Other available commands
 
-`climb up` Build, recreates and starts all the services. Also removes any orphan containers.
-`climb down` Stops all the services.
-`climb ps` Outputs the services status.
+- `climb up`:  Build, recreates and starts all the services. Also removes any orphan containers.
+- `climb down`:  Stops all the services.
+- `climb ps`:  Outputs the services status.
 
