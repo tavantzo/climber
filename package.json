@@ -1,5 +1,5 @@
 {
-  "name": "climber",
+  "name": "mountain-climber",
   "version": "1.0.0",
   "description": "Allows to start multiple dockerized services via docker-compose.",
   "repository": "https://github.com/tavantzo/climber.git",

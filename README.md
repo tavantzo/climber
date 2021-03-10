@@ -6,20 +6,26 @@ A command line tool to handle simultaneously multiple dockerized services that a
 
 #### Installation
 
-`yarn global add climber`
+`yarn global add mountain-climber`
 
 or
 
-`npm install -g climber`
+`npm install -g mountain-climber`
 
 
 #### Initialize
 
-`climb init`
-`Enter the root directory of your projects: ../my-services`
-`Enter a folder containing a docker-compose.yml file or nothing to exit: Service1`
-`Enter a folder containing a docker-compose.yml file or nothing to exit: Service2`
-`Enter a folder containing a docker-compose.yml file or nothing to exit: ServiceN`
+`
+climb init
+Enter the root directory of your projects: ../my-services
+Enter a folder containing a docker-compose.yml file or nothing to exit: Service1
+Enter a folder containing a docker-compose.yml file or nothing to exit: Service2
+....
+Enter a folder containing a docker-compose.yml file or nothing to exit: ServiceN
+Enter a folder containing a docker-compose.yml file or nothing to exit:
+Done!
+BYE BYE !!!"
+`
 
 Now the tool is ready to use.
 
