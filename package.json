@@ -2,6 +2,7 @@
   "name": "climber",
   "version": "1.0.0",
   "description": "Allows to start multiple dockerized services via docker-compose.",
+  "repository": "https://github.com/tavantzo/climber.git",
   "main": "bin/index.js",
   "license": "MIT",
   "bin": {
