@@ -1,7 +1,7 @@
 {
   "name": "climber",
   "version": "1.0.0",
-  "description": "Climber Mountain Olympus",
+  "description": "Allows to start multiple dockerized services via docker-compose.",
   "main": "bin/index.js",
   "license": "MIT",
   "bin": {
