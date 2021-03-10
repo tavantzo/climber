@@ -1,0 +1,19 @@
+{
+  "name": "climber",
+  "version": "1.0.0",
+  "description": "Climber Mountain Olympus",
+  "main": "bin/index.js",
+  "license": "MIT",
+  "bin": {
+    "climb": "./bin/index.js",
+    "climb-init": "./bin/init.js",
+    "climb-up": "./bin/up.js",
+    "climb-down": "./bin/down.js",
+    "climb-ps": "./bin/ps.js"
+  },
+  "dependencies": {
+    "args": "^5.0.1",
+    "docker-compose": "^0.23.6",
+    "find": "^0.3.0"
+  }
+}
