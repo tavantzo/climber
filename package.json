@@ -1,7 +1,7 @@
 {
   "name": "mountain-climber",
-  "version": "1.0.0",
-  "description": "Allows to start multiple dockerized services via docker-compose.",
+  "version": "1.1.0",
+  "description": "Allows to start multiple dockerized projects using docker-compose.",
   "repository": "https://github.com/tavantzo/climber.git",
   "main": "bin/index.js",
   "license": "MIT",
@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "args": "^5.0.1",
+    "chalk": "^4.1.0",
     "docker-compose": "^0.23.6",
     "find": "^0.3.0"
   }

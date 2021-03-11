@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const dc = require('docker-compose');
+const chalk = require('chalk');
 const path = require('path');
 const folders = require('./folders');
 
@@ -13,7 +14,7 @@ folders.map((folder) => {
   })
   .then((r) => {
     const dir = folder.split(path.sep).pop();
-    console.log(`\n${dir} services started.`);
+    console.log(chalk.yellow(`\n${dir} services started.`));
     console.log(r.out);
   })
   .catch((err) => {
