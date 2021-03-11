@@ -1,6 +1,6 @@
 {
   "name": "mountain-climber",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Allows to start multiple dockerized projects using docker-compose.",
   "repository": "https://github.com/tavantzo/climber.git",
   "main": "bin/index.js",

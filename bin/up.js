@@ -1,24 +1,20 @@
 #!/usr/bin/env node
 const dc = require('docker-compose');
 const chalk = require('chalk');
-const path = require('path');
 const folders = require('./folders');
 
-folders.map((folder) => {
-  dc.upAll({
-    log: true,
-    cwd: folder,
-    commandOptions: ['--build', '--remove-orphans', '--force-recreate'],
-  }).then(() => {
-    return dc.ps({ cwd: folder })
-  })
-  .then((r) => {
-    const dir = folder.split(path.sep).pop();
-    console.log(chalk.yellow(`\n${dir} services started.`));
-    console.log(r.out);
-  })
-  .catch((err) => {
-    console.error(err);
-    process.exit(1);
-  })
-});
+(async function() {
+  for await (result of startServices()) {
+    console.log(chalk.green(result.out));
+  }
+})();
+
+function* startServices() {
+  for (let i = 0; i < folders.length; i += 1) {
+    yield dc.upAll({
+      log: false,
+      cwd: folders[i],
+      commandOptions: ['--build', '--remove-orphans', '--force-recreate']
+    }).then(() => dc.ps({ cwd: folders[i] }))
+  }
+}
