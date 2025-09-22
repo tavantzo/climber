@@ -13,9 +13,9 @@ const inquirer = require('inquirer');
  */
 async function executeCustomCommand(project, projectPath, command, options = {}) {
   const { interactive = false, parallel = false } = options;
-  
+
   console.log(chalk.blue(`🔧 Running "${command.name}" in ${project.name}...`));
-  
+
   if (command.description) {
     console.log(chalk.gray(`   ${command.description}`));
   }
@@ -46,9 +46,9 @@ async function executeCustomCommand(project, projectPath, command, options = {})
     child.on('close', (code) => {
       if (code === 0) {
         console.log(chalk.green(`✓ "${command.name}" completed successfully in ${project.name}`));
-        resolve({ 
-          success: true, 
-          project: project.name, 
+        resolve({
+          success: true,
+          project: project.name,
           command: command.name,
           output: stdout,
           error: stderr
@@ -78,6 +78,11 @@ async function executeCustomCommand(project, projectPath, command, options = {})
  */
 function getTargetProjects(allProjects, target, config) {
   if (target === 'all' || (Array.isArray(target) && target.includes('all'))) {
+    return allProjects;
+  }
+
+  // Handle null/undefined target
+  if (!target) {
     return allProjects;
   }
 
@@ -114,10 +119,10 @@ function getTargetProjects(allProjects, target, config) {
  */
 async function executeCustomCommands(target, commandName, config, options = {}) {
   const { interactive = false, parallel = false } = options;
-  
+
   // Get all available projects
   const allProjects = config.projects || [];
-  
+
   // Find the command configuration
   const command = config.customCommands?.[commandName];
   if (!command) {
@@ -126,7 +131,7 @@ async function executeCustomCommands(target, commandName, config, options = {}) 
 
   // Get target projects
   const targetProjects = getTargetProjects(allProjects, target, config);
-  
+
   if (targetProjects.length === 0) {
     console.log(chalk.yellow(`No projects found for target: ${Array.isArray(target) ? target.join(', ') : target}`));
     return { success: true, results: [] };
@@ -144,11 +149,11 @@ async function executeCustomCommands(target, commandName, config, options = {}) 
       try {
         return await executeCustomCommand(project, projectPath, command, options);
       } catch (error) {
-        return { 
-          success: false, 
-          project: project.name, 
+        return {
+          success: false,
+          project: project.name,
           command: commandName,
-          error: error.message 
+          error: error.message
         };
       }
     });
@@ -163,13 +168,13 @@ async function executeCustomCommands(target, commandName, config, options = {}) 
         const result = await executeCustomCommand(project, projectPath, command, options);
         results.push(result);
       } catch (error) {
-        results.push({ 
-          success: false, 
-          project: project.name, 
+        results.push({
+          success: false,
+          project: project.name,
           command: commandName,
-          error: error.message 
+          error: error.message
         });
-        
+
         if (!options.continueOnError) {
           throw error;
         }
@@ -186,11 +191,11 @@ async function executeCustomCommands(target, commandName, config, options = {}) 
     console.log(chalk.red(`✗ Failed: ${failureCount}`));
   }
 
-  return { 
-    success: failureCount === 0, 
+  return {
+    success: failureCount === 0,
     command: commandName,
     target: target,
-    results 
+    results
   };
 }
 

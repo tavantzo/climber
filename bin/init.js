@@ -625,7 +625,7 @@ async function configureCustomCommands() {
 
     const command = await configureCustomCommand(commandName.trim());
     config.customCommands[commandName.trim()] = command;
-    
+
     console.log(chalk.green(`✓ Added custom command: ${commandName.trim()}\n`));
   }
 }
@@ -665,7 +665,7 @@ async function configureCustomCommand(commandName) {
 
   const description = await promptInput(`Enter description for "${commandName}" (optional): `);
   const command = await promptInput(`Enter command to execute (e.g., bundle exec rails console): `);
-  
+
   // Configure default target
   const targetChoices = [
     { name: 'All projects', value: 'all' },

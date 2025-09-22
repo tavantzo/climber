@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 const chalk = require('chalk');
 const configManager = require('./config');
-const { 
-  executeCustomCommands, 
-  listCustomCommands, 
-  interactiveCommandExecution 
+const {
+  executeCustomCommands,
+  listCustomCommands,
+  interactiveCommandExecution
 } = require('./custom-commands');
 
 /**
@@ -82,7 +82,7 @@ function showHelp() {
   console.log('');
   console.log(chalk.cyan('Arguments:'));
   console.log('  command    Name of the custom command to run');
-  console.log('  targets    Project names, group names, or "all" (default: command default)');
+  console.log('  targets    Project names, group names, or "all" (optional if command has default target)');
   console.log('');
   console.log(chalk.cyan('Options:'));
   console.log('  -i, --interactive        Run command in interactive mode');
@@ -92,6 +92,7 @@ function showHelp() {
   console.log('  -h, --help              Show this help message');
   console.log('');
   console.log(chalk.cyan('Examples:'));
+  console.log('  climb run bundle-install                      # Run on command default target');
   console.log('  climb run bundle-install insights sentinel    # Run on specific projects');
   console.log('  climb run bundle-install ruby-projects        # Run on project group');
   console.log('  climb run bundle-install all                  # Run on all projects');
@@ -128,7 +129,9 @@ async function main() {
     }
 
     // Get default target from command configuration if not specified
-    const finalTarget = target || config.customCommands?.[commandName]?.target || 'all';
+    const commandConfig = config.customCommands?.[commandName];
+    const defaultTarget = commandConfig?.target || 'all';
+    const finalTarget = target || defaultTarget;
 
     // Execute the custom command
     await executeCustomCommands(finalTarget, commandName, config, options);

@@ -64,7 +64,7 @@ describe('Custom Commands', () => {
       });
 
       const result = await executeCustomCommand(project, '/test/path', command);
-      
+
       expect(result.success).toBe(true);
       expect(result.project).toBe('test-project');
       expect(result.command).toBe('test-command');
@@ -101,7 +101,7 @@ describe('Custom Commands', () => {
       });
 
       await executeCustomCommand(project, '/test/path', command, { interactive: true });
-      
+
       expect(mockSpawn).toHaveBeenCalledWith('echo', ['"test"'], expect.objectContaining({
         stdio: 'inherit'
       }));
@@ -179,7 +179,7 @@ describe('Custom Commands', () => {
       });
 
       const result = await executeCustomCommands('all', 'test-command', config);
-      
+
       expect(result.success).toBe(true);
       expect(result.results).toHaveLength(2);
       expect(result.results[0].project).toBe('project1');
@@ -194,7 +194,7 @@ describe('Custom Commands', () => {
       });
 
       const result = await executeCustomCommands('project1', 'test-command', config);
-      
+
       expect(result.success).toBe(true);
       expect(result.results).toHaveLength(1);
       expect(result.results[0].project).toBe('project1');
@@ -208,7 +208,7 @@ describe('Custom Commands', () => {
       });
 
       const result = await executeCustomCommands('test-group', 'test-command', config);
-      
+
       expect(result.success).toBe(true);
       expect(result.results).toHaveLength(2);
     });
@@ -220,7 +220,7 @@ describe('Custom Commands', () => {
 
     it('should handle no projects found', async () => {
       const result = await executeCustomCommands('nonexistent', 'test-command', config);
-      
+
       expect(result.success).toBe(true);
       expect(result.results).toEqual([]);
     });
@@ -233,7 +233,7 @@ describe('Custom Commands', () => {
       });
 
       const result = await executeCustomCommands('all', 'test-command', config, { parallel: true });
-      
+
       expect(result.success).toBe(true);
       expect(result.results).toHaveLength(2);
     });
@@ -249,7 +249,7 @@ describe('Custom Commands', () => {
       });
 
       const result = await executeCustomCommands('all', 'test-command', config, { continueOnError: true });
-      
+
       expect(result.success).toBe(false);
       expect(result.results).toHaveLength(2);
       expect(result.results[0].success).toBe(false);
@@ -302,7 +302,7 @@ describe('Custom Commands', () => {
       const config = {};
 
       const result = await interactiveCommandExecution(config);
-      
+
       expect(result.success).toBe(true);
       expect(result.results).toEqual([]);
     });
@@ -338,6 +338,40 @@ describe('Custom Commands', () => {
       expect(result.success).toBe(true);
       expect(result.results).toHaveLength(1);
       expect(result.results[0].project).toBe('project1');
+    });
+
+    it('should use default target when no target specified', async () => {
+      const config = {
+        root: '/test/root',
+        customCommands: {
+          'test-command': {
+            description: 'Test command',
+            command: 'echo "test"',
+            target: 'test-group'
+          }
+        },
+        projects: [
+          { name: 'project1', path: 'project1' },
+          { name: 'project2', path: 'project2' }
+        ],
+        groups: {
+          'test-group': ['project1', 'project2']
+        }
+      };
+
+      mockChild.on.mockImplementation((event, callback) => {
+        if (event === 'close') {
+          setTimeout(() => callback(0), 10);
+        }
+      });
+
+      // Execute without specifying target - should use default
+      const result = await executeCustomCommands(undefined, 'test-command', config);
+      
+      expect(result.success).toBe(true);
+      expect(result.results).toHaveLength(2);
+      expect(result.results[0].project).toBe('project1');
+      expect(result.results[1].project).toBe('project2');
     });
   });
 });

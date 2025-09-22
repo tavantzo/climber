@@ -473,6 +473,9 @@ customCommands:
 #### Command Line Usage
 
 ```bash
+# Run custom command on its default target (no target needed!)
+climb run bundle-install
+
 # Run custom command on specific projects
 climb run bundle-install insights sentinel
 
@@ -483,7 +486,7 @@ climb run bundle-install ruby-projects
 climb run bundle-install all
 
 # Run in parallel across projects
-climb run bundle-install ruby-projects --parallel
+climb run bundle-install --parallel
 
 # Run in interactive mode
 climb run rails-console insights --interactive
@@ -506,22 +509,22 @@ climb run
 #### Examples
 
 ```bash
-# Ruby on Rails projects
-climb run bundle-install ruby-projects
+# Ruby on Rails projects (using default targets)
+climb run bundle-install
 climb run rails-console insights
-climb run rails-migrate ruby-projects
+climb run rails-migrate
 
-# Node.js projects
-climb run npm-install frontend-projects
+# Node.js projects (using default targets)
+climb run npm-install
 climb run npm-run-dev frontend --interactive
 
 # Git operations across all projects
-climb run git-status all
-climb run git-pull all --parallel
+climb run git-status
+climb run git-pull --parallel
 
 # Testing and linting
-climb run test-all all --parallel
-climb run lint-all frontend-projects
+climb run test-all --parallel
+climb run lint-all
 ```
 
 #### Interactive Configuration
