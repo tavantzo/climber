@@ -105,16 +105,39 @@ When a tag is created, the following happens automatically:
 3. **NPM Publishing**: Stable releases are published to NPM
 4. **Notifications**: Success/failure notifications are sent
 
+## Recent Major Features
+
+### Custom Commands System (v2.1.0+)
+- **Project-specific Commands**: Execute commands like `bundle exec`, `npm run`, `yarn`, etc.
+- **Project Groups**: Organize related projects (e.g., `ruby-projects`, `frontend-projects`)
+- **Flexible Targeting**: Run commands on specific projects, groups, or all projects
+- **Execution Modes**: Parallel and sequential execution options
+- **Enhanced Help**: Custom commands displayed in main help menu
+- **Interactive Configuration**: Set up during init process
+
+### Dependency Readiness Checking (v2.1.0+)
+- **Health Checks**: HTTP, port, command, and Docker service checks
+- **Retry Logic**: Configurable retry attempts and delays
+- **Integration**: Works with service startup process
+- **Command-line Options**: Override retry settings per command
+
+### Enhanced Project Selection (v2.1.0+)
+- **Command-line Selection**: Specify projects as arguments
+- **Interactive Selection**: Checkbox menus for project selection
+- **Mixed Workflows**: Combine command-line and interactive selection
+
 ## Release Checklist
 
 Before creating a release:
 
-- [ ] All tests pass (`npm test`)
-- [ ] Linting passes (`npm run lint`)
+- [ ] All tests pass (`yarn test`)
+- [ ] Linting passes (`yarn lint`)
 - [ ] Documentation is up to date
 - [ ] CHANGELOG.md is updated
 - [ ] Version number follows semantic versioning
 - [ ] Working directory is clean
+- [ ] Custom commands functionality tested
+- [ ] Help system displays custom commands correctly
 
 ## Semantic Versioning
 
@@ -180,6 +203,12 @@ git commit -m "Your commit message"
 - Verify package name is available on NPM
 - Check package.json version matches tag
 
+### Custom Commands Not Working
+- Verify configuration file has `customCommands` section
+- Check project groups are properly defined
+- Test with `climb run --list` to see available commands
+- Ensure help system shows custom commands with `climb --help`
+
 ## Examples
 
 ### Creating a Stable Release
@@ -209,4 +238,22 @@ git commit -m "Your commit message"
 
 # 2. This creates v1.1.0-beta-stable tag
 # 3. GitHub Actions will publish to NPM
+```
+
+### Creating a Release with New Features
+```bash
+# 1. Test all new functionality
+yarn test
+yarn lint
+climb --help  # Verify custom commands appear
+climb run --list  # Test custom commands listing
+
+# 2. Create the release
+./scripts/release.sh 2.1.0 stable
+
+# 3. Verify the release includes:
+#    - Custom commands system
+#    - Enhanced help system
+#    - Dependency readiness checking
+#    - Project selection improvements
 ```

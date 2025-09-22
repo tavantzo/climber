@@ -13,11 +13,11 @@ function showEnhancedHelp() {
   console.log(chalk.blue('Mountain Climber 🏔️'));
   console.log(chalk.gray('A powerful command line tool to handle multiple dockerized services'));
   console.log('');
-  
+
   console.log(chalk.cyan('Usage:'));
   console.log('  climb <command> [options]');
   console.log('');
-  
+
   console.log(chalk.cyan('Core Commands:'));
   console.log('  init      Initialize the climber tool');
   console.log('  up        Bring up all the services');
@@ -30,13 +30,13 @@ function showEnhancedHelp() {
   console.log('  run       Execute custom commands on projects or groups');
   console.log('  workspace Manage workspaces (create, list, switch, delete)');
   console.log('');
-  
+
   // Try to load and show custom commands
   try {
     const configManager = require('./config');
     configManager.load();
     const config = configManager.config;
-    
+
     if (config.customCommands && Object.keys(config.customCommands).length > 0) {
       console.log(chalk.cyan('Custom Commands:'));
       Object.entries(config.customCommands).forEach(([name, command]) => {
@@ -49,7 +49,7 @@ function showEnhancedHelp() {
   } catch (error) {
     // Silently ignore errors when loading config for help
   }
-  
+
   console.log(chalk.cyan('Examples:'));
   console.log('  climb init                    # Initialize configuration');
   console.log('  climb up                      # Start all services');
@@ -59,7 +59,7 @@ function showEnhancedHelp() {
   console.log('  climb run bundle-install      # Run custom command');
   console.log('  climb workspace list          # List workspaces');
   console.log('');
-  
+
   console.log(chalk.cyan('For more information:'));
   console.log('  climb <command> --help        # Get help for specific command');
   console.log('  climb run --list              # List available custom commands');
