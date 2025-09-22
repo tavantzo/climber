@@ -335,6 +335,98 @@ dependencies:
 
 Services will start in dependency order (database → api → frontend → worker) and stop in reverse order.
 
+### Dependency Readiness Checking
+
+Mountain Climber can check if dependencies are ready before starting services, with configurable retry logic:
+
+```yaml
+projects:
+  - name: database
+    path: database
+    description: PostgreSQL database service
+    readiness:
+      type: port
+      config:
+        host: localhost
+        port: 5432
+      timeout: 10000
+
+  - name: api
+    path: backend/api
+    description: REST API service
+    readiness:
+      type: http
+      config:
+        url: http://localhost:3000/health
+      timeout: 15000
+
+  - name: worker
+    path: backend/worker
+    description: Background job worker
+    readiness:
+      type: command
+      config:
+        command: "docker compose ps --format json worker | jq -r '.State' | grep -q running"
+      timeout: 10000
+```
+
+#### Readiness Check Types
+
+**HTTP Health Check:**
+```yaml
+readiness:
+  type: http
+  config:
+    url: http://localhost:3000/health
+  timeout: 15000
+```
+
+**Port Availability:**
+```yaml
+readiness:
+  type: port
+  config:
+    host: localhost
+    port: 5432
+  timeout: 10000
+```
+
+**Custom Command:**
+```yaml
+readiness:
+  type: command
+  config:
+    command: "curl -f http://localhost:3000/health"
+  timeout: 10000
+```
+
+**Docker Service Status:**
+```yaml
+readiness:
+  type: docker
+  config:
+    container: prometheus
+    service: prometheus
+  timeout: 30000
+```
+
+#### Command Line Options
+
+Control dependency readiness checking with command-line options:
+
+```bash
+# Custom retry settings
+climb up --max-retries=60 --retry-delay=5000 --timeout=10000
+
+# Start specific projects with custom settings
+climb up api frontend --max-retries=30 --retry-delay=2000
+```
+
+**Options:**
+- `--max-retries=N`: Maximum number of retry attempts (default: 30)
+- `--retry-delay=N`: Delay between retries in milliseconds (default: 2000)
+- `--timeout=N`: Timeout for individual readiness checks in milliseconds (default: 5000)
+
 ### Configuration File
 
 The configuration is stored in `~/.climber-config/config.yaml` and supports:
@@ -422,6 +514,9 @@ The project uses GitHub Actions for:
 - Configure service dependencies with automatic topological sorting
 - Proper startup and shutdown order
 - Dependency validation
+- **Dependency readiness checking** with multiple check types
+- **Configurable retry logic** with customizable timeouts
+- **Health check integration** for reliable service startup
 
 ### 📁 **Interactive Setup**
 - Tab completion for directory navigation

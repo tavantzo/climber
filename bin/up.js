@@ -4,6 +4,7 @@ const chalk = require('chalk');
 const path = require('path');
 const inquirer = require('inquirer');
 const configManager = require('./config');
+const { waitForDependencies, getDependencyReadinessConfig } = require('./dependency-readiness');
 
 /**
  * Start a single project's services
@@ -11,15 +12,32 @@ const configManager = require('./config');
  * @param {string} projectPath - Full path to project directory
  * @param {number} index - Current project index
  * @param {number} total - Total number of projects
+ * @param {Object} options - Options for dependency readiness checking
  * @returns {Promise<Object>} - Status information
  */
-async function startProject(project, projectPath, index, total) {
+async function startProject(project, projectPath, index, total, options = {}) {
   const dirName = project.name;
 
   console.log(chalk.blue(`[${index + 1}/${total}] Starting ${dirName}...`));
 
   if (project.description) {
     console.log(chalk.gray(`   ${project.description}`));
+  }
+
+  // Check dependency readiness if configured
+  const dependencies = getDependencyReadinessConfig(project, /** @type {any} */ (configManager.config));
+  if (dependencies.length > 0) {
+    console.log(chalk.cyan(`   Checking ${dependencies.length} dependencies...`));
+
+    const dependenciesReady = await waitForDependencies(dependencies, projectPath, {
+      maxRetries: options.maxRetries || 30,
+      retryDelay: options.retryDelay || 2000,
+      timeout: options.timeout || 5000
+    });
+
+    if (!dependenciesReady) {
+      throw new Error(`Dependencies not ready for ${dirName}`);
+    }
   }
 
   await dc.upAll({
@@ -69,7 +87,7 @@ async function selectProjects(availableProjects, selectedProjects = []) {
     short: project.name
   }));
 
-  const { selectedProjectNames } = await inquirer.prompt([{
+  const { selectedProjectNames } = await inquirer['prompt']([{
     type: 'checkbox',
     name: 'selectedProjectNames',
     message: 'Select projects to start:',
@@ -86,9 +104,10 @@ async function selectProjects(availableProjects, selectedProjects = []) {
  * Start all services for a given environment
  * @param {string} environment - Environment name
  * @param {Array} selectedProjects - Specific projects to start (optional)
+ * @param {Object} options - Options for dependency readiness checking
  * @returns {Promise<Object>} - Results of starting all services
  */
-async function startServices(environment = 'default', selectedProjects = []) {
+async function startServices(environment = 'default', selectedProjects = [], options = {}) {
   const allProjects = configManager.getStartupOrder(environment);
   const projects = await selectProjects(allProjects, selectedProjects);
   const results = [];
@@ -103,10 +122,10 @@ async function startServices(environment = 'default', selectedProjects = []) {
 
   for (let i = 0; i < projects.length; i += 1) {
     const project = projects[i];
-    const folder = path.join(configManager.config.root, project.path);
+    const folder = path.join(/** @type {any} */ (configManager.config).root, project.path);
 
     try {
-      const result = await startProject(project, folder, i, projects.length);
+      const result = await startProject(project, folder, i, projects.length, options);
       results.push(result);
     } catch (error) {
       console.error(chalk.red(`✗ Failed to start services in ${project.name}:`), error.message);
@@ -124,11 +143,27 @@ if (require.main === module) {
     try {
       const environment = process.env.CLIMBER_ENV || 'default';
 
-      // Parse command line arguments for project selection
+      // Parse command line arguments
       const args = process.argv.slice(2);
       const selectedProjects = args.filter(arg => !arg.startsWith('--'));
 
-      await startServices(environment, selectedProjects);
+      // Parse dependency readiness options
+      const options = {};
+      const maxRetriesArg = args.find(arg => arg.startsWith('--max-retries='));
+      const retryDelayArg = args.find(arg => arg.startsWith('--retry-delay='));
+      const timeoutArg = args.find(arg => arg.startsWith('--timeout='));
+
+      if (maxRetriesArg) {
+        options.maxRetries = parseInt(maxRetriesArg.split('=')[1], 10);
+      }
+      if (retryDelayArg) {
+        options.retryDelay = parseInt(retryDelayArg.split('=')[1], 10);
+      }
+      if (timeoutArg) {
+        options.timeout = parseInt(timeoutArg.split('=')[1], 10);
+      }
+
+      await startServices(environment, selectedProjects, options);
     } catch (error) {
       console.error(chalk.red('Error starting services:'), error.message);
       process.exit(1);

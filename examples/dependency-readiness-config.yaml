@@ -1,0 +1,115 @@
+# Example configuration with dependency readiness checking
+# This file demonstrates how to configure dependency readiness checks
+
+root: /Users/developer/my-services
+
+projects:
+  - name: database
+    path: database
+    description: PostgreSQL database service
+    readiness:
+      type: port
+      config:
+        host: localhost
+        port: 5432
+      timeout: 10000
+
+  - name: redis
+    path: cache/redis
+    description: Redis cache service
+    readiness:
+      type: port
+      config:
+        host: localhost
+        port: 6379
+      timeout: 5000
+
+  - name: api
+    path: backend/api
+    description: REST API service
+    readiness:
+      type: http
+      config:
+        url: http://localhost:3000/health
+      timeout: 15000
+
+  - name: worker
+    path: backend/worker
+    description: Background job worker
+    readiness:
+      type: command
+      config:
+        command: "docker compose ps --format json worker | jq -r '.State' | grep -q running"
+      timeout: 10000
+
+  - name: frontend
+    path: frontend
+    description: React frontend application
+    readiness:
+      type: http
+      config:
+        url: http://localhost:3001/health
+      timeout: 20000
+
+  - name: monitoring
+    path: monitoring
+    description: Prometheus and Grafana monitoring
+    readiness:
+      type: docker
+      config:
+        container: prometheus
+        service: prometheus
+      timeout: 30000
+
+# Service dependencies with readiness checking
+dependencies:
+  api: [database, redis]
+  worker: [database, redis, api]
+  frontend: [api]
+  monitoring: [api, frontend]
+
+# Environment-specific configurations
+environments:
+  default:
+    description: Default environment
+    projects: [database, redis, api, worker, frontend, monitoring]
+
+  development:
+    description: Development environment
+    projects: [database, redis, api, frontend]
+    # Override readiness settings for development
+    readiness:
+      api:
+        type: http
+        config:
+          url: http://localhost:3000/health
+        timeout: 5000  # Shorter timeout for development
+
+  production:
+    description: Production environment
+    projects: [database, redis, api, worker, frontend, monitoring]
+    # Production readiness settings
+    readiness:
+      api:
+        type: http
+        config:
+          url: https://api.example.com/health
+        timeout: 30000  # Longer timeout for production
+
+  testing:
+    description: Testing environment
+    projects: [database, api]
+    # Simplified readiness for testing
+    readiness:
+      api:
+        type: port
+        config:
+          host: localhost
+          port: 3000
+        timeout: 10000
+
+# Global dependency readiness settings
+dependencyReadiness:
+  maxRetries: 30
+  retryDelay: 2000
+  timeout: 5000
