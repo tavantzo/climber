@@ -1,0 +1,210 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.0.0)'
+        required: true
+        type: string
+      release_type:
+        description: 'Type of release'
+        required: true
+        type: choice
+        options:
+          - 'stable'
+          - 'beta'
+          - 'alpha'
+          - 'rc'
+        default: 'stable'
+      changelog:
+        description: 'Custom changelog (optional)'
+        required: false
+        type: string
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run tests
+      run: npm test
+
+    - name: Run linter
+      run: npm run lint
+
+    - name: Generate version and tag
+      id: version
+      run: |
+        VERSION="${{ github.event.inputs.version }}"
+        RELEASE_TYPE="${{ github.event.inputs.release_type }}"
+
+        # Create tag based on release type
+        case $RELEASE_TYPE in
+          "stable")
+            TAG="v$VERSION"
+            PRERELEASE=false
+            ;;
+          "beta")
+            TAG="v$VERSION-beta"
+            PRERELEASE=true
+            ;;
+          "alpha")
+            TAG="v$VERSION-alpha"
+            PRERELEASE=true
+            ;;
+          "rc")
+            TAG="v$VERSION-rc"
+            PRERELEASE=true
+            ;;
+        esac
+
+        echo "tag=$TAG" >> $GITHUB_OUTPUT
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "prerelease=$PRERELEASE" >> $GITHUB_OUTPUT
+        echo "release_type=$RELEASE_TYPE" >> $GITHUB_OUTPUT
+
+        echo "Generated tag: $TAG"
+        echo "Version: $VERSION"
+        echo "Release type: $RELEASE_TYPE"
+        echo "Prerelease: $PRERELEASE"
+
+    - name: Check if tag exists
+      run: |
+        TAG="${{ steps.version.outputs.tag }}"
+        if git rev-parse "$TAG" >/dev/null 2>&1; then
+          echo "❌ Tag $TAG already exists!"
+          exit 1
+        fi
+        echo "✅ Tag $TAG is available"
+
+    - name: Update package.json
+      run: |
+        VERSION="${{ steps.version.outputs.version }}"
+        npm version $VERSION --no-git-tag-version
+        echo "✅ Updated package.json to version $VERSION"
+
+    - name: Generate changelog
+      id: changelog
+      run: |
+        TAG="${{ steps.version.outputs.tag }}"
+        RELEASE_TYPE="${{ steps.version.outputs.release_type }}"
+        CUSTOM_CHANGELOG="${{ github.event.inputs.changelog }}"
+
+        if [ -n "$CUSTOM_CHANGELOG" ]; then
+          echo "$CUSTOM_CHANGELOG" > CHANGELOG_RELEASE.md
+        else
+          # Get previous tag
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          echo "## Release $TAG" > CHANGELOG_RELEASE.md
+          echo "" >> CHANGELOG_RELEASE.md
+
+          if [ -n "$PREVIOUS_TAG" ]; then
+            echo "### Changes since $PREVIOUS_TAG" >> CHANGELOG_RELEASE.md
+            echo "" >> CHANGELOG_RELEASE.md
+            git log --pretty=format:"- %s (%h)" $PREVIOUS_TAG..HEAD >> CHANGELOG_RELEASE.md
+          else
+            echo "### Initial Release" >> CHANGELOG_RELEASE.md
+            echo "" >> CHANGELOG_RELEASE.md
+            echo "First release of the climber CLI tool." >> CHANGELOG_RELEASE.md
+          fi
+        fi
+
+        # Add release type information
+        echo "" >> CHANGELOG_RELEASE.md
+        case $RELEASE_TYPE in
+          "stable")
+            echo "## 🎉 Stable Release" >> CHANGELOG_RELEASE.md
+            echo "This is a stable release suitable for production use." >> CHANGELOG_RELEASE.md
+            ;;
+          "beta")
+            echo "## 🧪 Beta Release" >> CHANGELOG_RELEASE.md
+            echo "This is a beta release for testing purposes." >> CHANGELOG_RELEASE.md
+            ;;
+          "alpha")
+            echo "## ⚠️ Alpha Release" >> CHANGELOG_RELEASE.md
+            echo "This is an alpha release for early testing." >> CHANGELOG_RELEASE.md
+            ;;
+          "rc")
+            echo "## 🚀 Release Candidate" >> CHANGELOG_RELEASE.md
+            echo "This is a release candidate for final testing." >> CHANGELOG_RELEASE.md
+            ;;
+        esac
+
+    - name: Create tag
+      run: |
+        TAG="${{ steps.version.outputs.tag }}"
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git add package.json package-lock.json
+        git commit -m "chore: bump version to $TAG" || true
+        git tag -a "$TAG" -m "Release $TAG"
+        git push origin "$TAG"
+        git push origin HEAD
+        echo "✅ Created and pushed tag: $TAG"
+
+    - name: Create release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        TAG="${{ steps.version.outputs.tag }}"
+        PRERELEASE="${{ steps.version.outputs.prerelease }}"
+
+        gh api repos/${{ github.repository }}/releases \
+          --method POST \
+          --field tag_name="$TAG" \
+          --field name="Release $TAG" \
+          --field body_path="CHANGELOG_RELEASE.md" \
+          --field prerelease="$PRERELEASE" \
+          --field draft=false
+
+        echo "✅ Created release: $TAG"
+
+    - name: Publish to NPM (stable only)
+      if: steps.version.outputs.release_type == 'stable'
+      run: |
+        TAG="${{ steps.version.outputs.tag }}"
+        VERSION="${{ steps.version.outputs.version }}"
+
+        # Setup NPM
+        echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+
+        # Publish to NPM
+        npm publish
+        echo "✅ Published $TAG to NPM"
+
+    - name: Summary
+      run: |
+        TAG="${{ steps.version.outputs.tag }}"
+        RELEASE_TYPE="${{ steps.version.outputs.release_type }}"
+
+        echo "## 🎉 Release Created Successfully!"
+        echo ""
+        echo "**Tag:** $TAG"
+        echo "**Type:** $RELEASE_TYPE"
+        echo "**Repository:** ${{ github.repository }}"
+        echo ""
+        echo "**Release URL:** https://github.com/${{ github.repository }}/releases/tag/$TAG"
+        echo ""
+        if [ "$RELEASE_TYPE" = "stable" ]; then
+          echo "✅ Published to NPM"
+        else
+          echo "📦 Pre-release (not published to NPM)"
+        fi

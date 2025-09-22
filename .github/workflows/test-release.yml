@@ -1,0 +1,128 @@
+name: Test Release Process
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_version:
+        description: 'Test version (e.g., 0.0.1-test)'
+        required: true
+        type: string
+        default: '0.0.1-test'
+
+jobs:
+  test-release:
+    name: Test Release Process
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run tests
+      run: npm test
+
+    - name: Run linter
+      run: npm run lint
+
+    - name: Test release script
+      run: |
+        chmod +x scripts/release.sh
+        ./scripts/release.sh help
+        ./scripts/release.sh list
+
+    - name: Test version bump (dry run)
+      run: |
+        TEST_VERSION="${{ github.event.inputs.test_version }}"
+        echo "Testing version bump to $TEST_VERSION"
+
+        # Backup package.json
+        cp package.json package.json.backup
+
+        # Test version bump
+        npm version "$TEST_VERSION" --no-git-tag-version
+
+        # Check if version was updated
+        if grep -q "\"version\": \"$TEST_VERSION\"" package.json; then
+          echo "✅ Version bump successful"
+        else
+          echo "❌ Version bump failed"
+          exit 1
+        fi
+
+        # Restore package.json
+        mv package.json.backup package.json
+
+    - name: Test tag creation (dry run)
+      run: |
+        TEST_VERSION="${{ github.event.inputs.test_version }}"
+        TEST_TAG="v$TEST_VERSION"
+
+        echo "Testing tag creation: $TEST_TAG"
+
+        # Check if tag would be valid
+        if [[ "$TEST_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+          echo "✅ Version format is valid"
+        else
+          echo "❌ Version format is invalid"
+          exit 1
+        fi
+
+        # Check if tag already exists
+        if git rev-parse "$TEST_TAG" >/dev/null 2>&1; then
+          echo "⚠️ Tag $TEST_TAG already exists"
+        else
+          echo "✅ Tag $TEST_TAG is available"
+        fi
+
+    - name: Test changelog generation
+      run: |
+        TEST_VERSION="${{ github.event.inputs.test_version }}"
+        TEST_TAG="v$TEST_VERSION"
+
+        echo "Testing changelog generation for $TEST_TAG"
+
+        # Get previous tag
+        PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+        if [ -n "$PREVIOUS_TAG" ]; then
+          echo "## Changes since $PREVIOUS_TAG" > test_changelog.md
+          echo "" >> test_changelog.md
+          git log --pretty=format:"- %s (%h)" $PREVIOUS_TAG..HEAD >> test_changelog.md
+        else
+          echo "## Initial Release" > test_changelog.md
+          echo "" >> test_changelog.md
+          echo "First release of the climber CLI tool." >> test_changelog.md
+        fi
+
+        echo "✅ Changelog generated:"
+        cat test_changelog.md
+
+    - name: Summary
+      run: |
+        TEST_VERSION="${{ github.event.inputs.test_version }}"
+        TEST_TAG="v$TEST_VERSION"
+
+        echo "## 🧪 Release Process Test Summary"
+        echo ""
+        echo "**Test Version:** $TEST_VERSION"
+        echo "**Test Tag:** $TEST_TAG"
+        echo ""
+        echo "✅ All release process tests passed!"
+        echo ""
+        echo "The release process is ready for use."
+        echo "You can now create real releases using:"
+        echo "- \`./scripts/release.sh <version> <type>\`"
+        echo "- GitHub Actions 'Create Release' workflow"
+        echo "- Manual git tag creation"

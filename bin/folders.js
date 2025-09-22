@@ -1,9 +1,7 @@
-const fs = require('fs');
-const path = require('path');
+const configManager = require('./config');
 
-const configFile = path.join(process.env.HOME, '.climber-config', 'config.json');
-const buffer = fs.readFileSync(configFile, { encoding: 'utf8' });
-const config = JSON.parse(buffer);
-const folders = config.folders.map(folder => path.join(config.root, folder));
+// Load configuration and get project paths
+const environment = process.env.CLIMBER_ENV || 'default';
+const folders = configManager.getProjectPaths(environment);
 
 module.exports = folders;

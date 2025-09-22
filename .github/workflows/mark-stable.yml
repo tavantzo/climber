@@ -1,0 +1,165 @@
+name: Mark Stable Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to mark as stable (e.g., v1.0.0)'
+        required: true
+        type: string
+      create_stable_tag:
+        description: 'Create a new stable tag (e.g., v1.0.0-stable)'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  mark-stable:
+    name: Mark Tag as Stable
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Validate tag exists
+      run: |
+        TAG="${{ github.event.inputs.tag }}"
+        if ! git rev-parse "$TAG" >/dev/null 2>&1; then
+          echo "❌ Tag $TAG does not exist!"
+          exit 1
+        fi
+        echo "✅ Tag $TAG exists"
+
+    - name: Check if already stable
+      id: check_stable
+      run: |
+        TAG="${{ github.event.inputs.tag }}"
+
+        # Check if tag is already a stable version
+        if [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "already_stable=true" >> $GITHUB_OUTPUT
+          echo "✅ Tag $TAG is already a stable version (semantic versioning)"
+        elif [[ "$TAG" =~ stable ]]; then
+          echo "already_stable=true" >> $GITHUB_OUTPUT
+          echo "✅ Tag $TAG is already marked as stable"
+        else
+          echo "already_stable=false" >> $GITHUB_OUTPUT
+          echo "📝 Tag $TAG needs to be marked as stable"
+        fi
+
+    - name: Create stable tag
+      if: steps.check_stable.outputs.already_stable == 'false' && github.event.inputs.create_stable_tag == 'true'
+      run: |
+        ORIGINAL_TAG="${{ github.event.inputs.tag }}"
+        STABLE_TAG="${ORIGINAL_TAG}-stable"
+
+        # Check if stable tag already exists
+        if git rev-parse "$STABLE_TAG" >/dev/null 2>&1; then
+          echo "⚠️ Stable tag $STABLE_TAG already exists, updating it..."
+          git tag -d "$STABLE_TAG" || true
+          git push origin ":refs/tags/$STABLE_TAG" || true
+        fi
+
+        # Create new stable tag pointing to the same commit
+        git tag "$STABLE_TAG" "$ORIGINAL_TAG"
+        git push origin "$STABLE_TAG"
+
+        echo "✅ Created stable tag: $STABLE_TAG"
+
+    - name: Update release to stable
+      if: steps.check_stable.outputs.already_stable == 'false'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        ORIGINAL_TAG="${{ github.event.inputs.tag }}"
+        STABLE_TAG="${ORIGINAL_TAG}-stable"
+
+        # Get release info
+        RELEASE_ID=$(gh api repos/${{ github.repository }}/releases/tags/$ORIGINAL_TAG --jq '.id')
+
+        if [ -n "$RELEASE_ID" ]; then
+          # Update the original release to mark as stable
+          gh api repos/${{ github.repository }}/releases/$RELEASE_ID \
+            --method PATCH \
+            --field prerelease=false \
+            --field name="Release $ORIGINAL_TAG (Stable)"
+
+          echo "✅ Updated release $ORIGINAL_TAG to stable"
+        fi
+
+    - name: Create stable release
+      if: steps.check_stable.outputs.already_stable == 'false' && github.event.inputs.create_stable_tag == 'true'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        ORIGINAL_TAG="${{ github.event.inputs.tag }}"
+        STABLE_TAG="${ORIGINAL_TAG}-stable"
+
+        # Get the original release body
+        ORIGINAL_BODY=$(gh api repos/${{ github.repository }}/releases/tags/$ORIGINAL_TAG --jq '.body')
+
+        # Create stable release
+        gh api repos/${{ github.repository }}/releases \
+          --method POST \
+          --field tag_name="$STABLE_TAG" \
+          --field name="Stable Release $ORIGINAL_TAG" \
+          --field body="$ORIGINAL_BODY
+
+## 🎉 Stable Release
+This is a stable release suitable for production use.
+
+**Original Release:** $ORIGINAL_TAG" \
+          --field prerelease=false \
+          --field draft=false
+
+        echo "✅ Created stable release: $STABLE_TAG"
+
+    - name: Publish stable version to NPM
+      if: steps.check_stable.outputs.already_stable == 'false' && github.event.inputs.create_stable_tag == 'true'
+      run: |
+        ORIGINAL_TAG="${{ github.event.inputs.tag }}"
+        STABLE_TAG="${ORIGINAL_TAG}-stable"
+
+        # Checkout the stable tag
+        git checkout "$STABLE_TAG"
+
+        # Setup Node.js
+        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+        sudo apt-get install -y nodejs
+
+        # Install dependencies
+        npm ci
+
+        # Update package.json version
+        VERSION=${STABLE_TAG#v}  # Remove 'v' prefix
+        npm version $VERSION --no-git-tag-version
+
+        # Publish to NPM
+        npm publish
+        echo "✅ Published stable version $STABLE_TAG to NPM"
+
+    - name: Summary
+      run: |
+        ORIGINAL_TAG="${{ github.event.inputs.tag }}"
+        STABLE_TAG="${ORIGINAL_TAG}-stable"
+
+        echo "## 🎉 Stable Release Summary"
+        echo ""
+        if [ "${{ steps.check_stable.outputs.already_stable }}" = "true" ]; then
+          echo "✅ Tag $ORIGINAL_TAG is already stable"
+        else
+          echo "✅ Tag $ORIGINAL_TAG has been marked as stable"
+          if [ "${{ github.event.inputs.create_stable_tag }}" = "true" ]; then
+            echo "✅ Created stable tag: $STABLE_TAG"
+            echo "✅ Published to NPM: $STABLE_TAG"
+          fi
+        fi
+        echo ""
+        echo "**Release URL:** https://github.com/${{ github.repository }}/releases/tag/$ORIGINAL_TAG"
+        if [ "${{ github.event.inputs.create_stable_tag }}" = "true" ] && [ "${{ steps.check_stable.outputs.already_stable }}" = "false" ]; then
+          echo "**Stable Release URL:** https://github.com/${{ github.repository }}/releases/tag/$STABLE_TAG"
+        fi
