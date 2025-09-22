@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased] - 2024-01-XX
 
 ### Added
+- Future features and improvements will be documented here
+
+## [2.2.0] - 2024-01-XX
+
+### Added
 - **Custom Commands System**: Execute project-specific commands across multiple projects
   - Project groups for organizing related projects (e.g., `ruby-projects`, `frontend-projects`)
   - Flexible targeting: run commands on specific projects, groups, or all projects
