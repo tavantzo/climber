@@ -334,7 +334,7 @@ describe('Custom Commands', () => {
       });
 
       const result = await interactiveCommandExecution(config);
-      
+
       expect(result.success).toBe(true);
       expect(result.results).toHaveLength(1);
       expect(result.results[0].project).toBe('project1');
@@ -367,7 +367,7 @@ describe('Custom Commands', () => {
 
       // Execute without specifying target - should use default
       const result = await executeCustomCommands(undefined, 'test-command', config);
-      
+
       expect(result.success).toBe(true);
       expect(result.results).toHaveLength(2);
       expect(result.results[0].project).toBe('project1');
