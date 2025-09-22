@@ -31,19 +31,19 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20.x'
-        cache: 'npm'
+        cache: 'yarn'
 
     - name: Install dependencies
-      run: npm ci
+      run: yarn install --frozen-lockfile
 
     - name: Run linter
-      run: npm run lint
+      run: yarn lint
 
     - name: Run tests
-      run: npm test
+      run: yarn test
 
     - name: Run tests with coverage
-      run: npm run test:coverage
+      run: yarn test:coverage
 
   release:
     name: Create Release
@@ -61,10 +61,10 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20.x'
-        cache: 'npm'
+        cache: 'yarn'
 
     - name: Install dependencies
-      run: npm ci
+      run: yarn install --frozen-lockfile
 
     - name: Get tag info
       id: tag_info
@@ -138,11 +138,11 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20.x'
-        cache: 'npm'
+        cache: 'yarn'
         registry-url: 'https://registry.npmjs.org'
 
     - name: Install dependencies
-      run: npm ci
+      run: yarn install --frozen-lockfile
 
     - name: Get tag info
       id: tag_info
@@ -166,10 +166,10 @@ jobs:
       run: |
         TAG="${{ steps.tag_info.outputs.tag }}"
         VERSION=${TAG#v}  # Remove 'v' prefix
-        npm version $VERSION --no-git-tag-version
+        yarn version $VERSION --no-git-tag-version
 
     - name: Publish to NPM
-      run: npm publish
+      run: yarn publish
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 

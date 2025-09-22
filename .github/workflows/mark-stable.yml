@@ -132,14 +132,14 @@ This is a stable release suitable for production use.
         sudo apt-get install -y nodejs
 
         # Install dependencies
-        npm ci
+        yarn install --frozen-lockfile
 
         # Update package.json version
         VERSION=${STABLE_TAG#v}  # Remove 'v' prefix
-        npm version $VERSION --no-git-tag-version
+        yarn version $VERSION --no-git-tag-version
 
         # Publish to NPM
-        npm publish
+        yarn publish
         echo "✅ Published stable version $STABLE_TAG to NPM"
 
     - name: Summary

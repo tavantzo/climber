@@ -23,19 +23,19 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
+        cache: 'yarn'
 
     - name: Install dependencies
-      run: npm ci
+      run: yarn install --frozen-lockfile
 
     - name: Run linter
-      run: npm run lint
+      run: yarn lint
 
     - name: Run tests
-      run: npm test
+      run: yarn test
 
     - name: Run tests with coverage
-      run: npm run test:coverage
+      run: yarn test:coverage
 
     - name: Upload coverage to Codecov
       if: matrix.node-version == '20.x'
@@ -59,13 +59,13 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20.x'
-        cache: 'npm'
+        cache: 'yarn'
 
     - name: Install dependencies
-      run: npm ci
+      run: yarn install --frozen-lockfile
 
     - name: Run tests in watch mode (single run)
-      run: npm run test:watch -- --watchAll=false
+      run: yarn test:watch -- --watchAll=false
 
   test-ci:
     name: Test CI Mode
@@ -80,13 +80,13 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20.x'
-        cache: 'npm'
+        cache: 'yarn'
 
     - name: Install dependencies
-      run: npm ci
+      run: yarn install --frozen-lockfile
 
     - name: Run tests in CI mode
-      run: npm run test:ci
+      run: yarn test:ci
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
