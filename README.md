@@ -79,19 +79,72 @@ dependencies:
 
 **3. Start your services:**
 ```bash
+# Start all services (shows interactive selection menu)
 climb up
+
+# Or start specific projects directly
+climb up database api
 ```
 
 Now the tool is ready to use! 🚀
 
+## Project Selection
+
+Mountain Climber supports selecting specific projects for all core commands, giving you fine-grained control over which services to manage.
+
+### Command Line Selection
+
+Specify project names as arguments to target specific projects:
+
+```bash
+# Start only specific projects
+climb up insights sentinel
+
+# Stop only specific projects  
+climb down insights
+
+# Get logs from specific projects
+climb logs insights sentinel
+
+# Follow logs from specific projects
+climb logs -f sentinel
+```
+
+### Interactive Selection
+
+When no projects are specified, Mountain Climber shows an interactive checkbox menu:
+
+```bash
+# Shows interactive menu to select projects
+climb up
+climb down  
+climb logs
+```
+
+**Interactive Menu Example:**
+```
+? Select projects to start: (Press <space> to select, <a> to toggle all, <i> to invert selection)
+❯◉ insights - Analytics and monitoring service
+ ◉ sentinel - Security monitoring service  
+ ◉ api-gateway - Main API gateway
+ ◉ database - PostgreSQL database
+```
+
+### Project Selection Benefits
+
+- **Faster Development**: Work on specific services without managing all projects
+- **Resource Efficiency**: Only start the services you need
+- **Focused Debugging**: Get logs from specific projects only
+- **Flexible Workflows**: Mix command-line and interactive selection as needed
+
 ## Commands
 
 ### Core Commands
-- `climb up`: Build, recreate and start all services. Removes orphan containers.
-- `climb down`: Stop all services.
-- `climb ps`: Show services status.
-- `climb logs`: View logs from all services with follow mode support.
-- `climb restart`: Restart all or specific services.
+- `climb up [projects...]`: Build, recreate and start all services or specific projects. Removes orphan containers.
+- `climb down [projects...]`: Stop all services or specific projects.
+- `climb ps [projects...]`: Show services status for all or specific projects.
+- `climb logs [projects...]`: View logs from all services or specific projects with follow mode support.
+- `climb restart [projects...]`: Restart all or specific services.
 - `climb clean`: Clean up unused Docker resources.
 
 ### Configuration & Workspace Management
@@ -105,34 +158,67 @@ Now the tool is ready to use! 🚀
 
 ### Command Details
 
-#### `climb logs` (or `climb l`)
-View logs from all configured services.
+#### `climb up [projects...]`
+Build, recreate and start all services or specific projects. Removes orphan containers.
+
+**Options:**
+- `[projects...]`: Optional project names to start (if not specified, shows interactive selection)
+
+**Examples:**
+```bash
+climb up                     # Start all projects (interactive selection)
+climb up insights sentinel   # Start only insights and sentinel projects
+climb up database            # Start only database project
+```
+
+#### `climb down [projects...]`
+Stop all services or specific projects.
+
+**Options:**
+- `[projects...]`: Optional project names to stop (if not specified, shows interactive selection)
+
+**Examples:**
+```bash
+climb down                   # Stop all projects (interactive selection)
+climb down insights sentinel # Stop only insights and sentinel projects
+climb down database          # Stop only database project
+```
+
+#### `climb logs [projects...]` (or `climb l`)
+View logs from all configured services or specific projects.
 
 **Options:**
 - `--follow` or `-f`: Follow log output (like `tail -f`)
 - `--tail=N`: Number of lines to show from the end of logs (default: 100)
 - `[service]`: Optional service name to filter logs
+- `[projects...]`: Optional project names to get logs from (if not specified, shows interactive selection)
 
 **Examples:**
 ```bash
-climb logs                    # Show last 100 lines from all services
-climb logs --follow          # Follow logs from all services
-climb logs --tail=50         # Show last 50 lines
-climb logs web               # Show logs only from 'web' service
-climb logs --follow web      # Follow logs from 'web' service
+climb logs                           # Show last 100 lines from all services (interactive selection)
+climb logs insights sentinel         # Show logs from insights and sentinel projects
+climb logs --follow                  # Follow logs from all services (interactive selection)
+climb logs --follow insights         # Follow logs from insights project only
+climb logs --tail=50                 # Show last 50 lines from all services
+climb logs web                       # Show logs only from 'web' service in all projects
+climb logs insights web              # Show logs from 'web' service in insights project
+climb logs --follow insights web     # Follow logs from 'web' service in insights project
 ```
 
-#### `climb restart` (or `climb r`)
-Restart all services or specific services across all projects.
+#### `climb restart [projects...]` (or `climb r`)
+Restart all services or specific services across all projects or specific projects.
 
 **Options:**
 - `--timeout=N`: Timeout in seconds for restart (default: 10)
 - `[service]`: Optional service name to restart
+- `[projects...]`: Optional project names to restart (if not specified, shows interactive selection)
 
 **Examples:**
 ```bash
-climb restart                # Restart all services
+climb restart                # Restart all services (interactive selection)
+climb restart insights       # Restart all services in insights project
 climb restart web            # Restart 'web' service in all projects
+climb restart insights web   # Restart 'web' service in insights project
 climb restart --timeout=30   # Restart with 30-second timeout
 ```
 
@@ -342,10 +428,17 @@ The project uses GitHub Actions for:
 - Filesystem support with `~` and relative paths
 - Auto-discovery of docker-compose files
 
+### 🎯 **Project Selection**
+- Command-line project selection for targeted operations
+- Interactive checkbox menus for easy project selection
+- Mix and match command-line and interactive selection
+- All projects selected by default in interactive mode
+
 ### 📊 **Comprehensive Logging**
 - Follow mode for real-time log monitoring
 - Service-specific log filtering
 - Concurrent log streaming for multiple projects
+- Project-specific log filtering
 
 ### 🧹 **Docker Resource Management**
 - Clean up unused containers, volumes, images, and networks
