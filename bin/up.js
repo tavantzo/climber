@@ -31,7 +31,7 @@ async function startProject(project, projectPath, index, total, options = {}) {
 
     // Get global dependency readiness settings from config
     const globalSettings = /** @type {any} */ (configManager.config).dependencyReadiness || {};
-    
+
     const dependenciesReady = await waitForDependencies(dependencies, projectPath, {
       maxRetries: options.maxRetries || globalSettings.maxRetries || 30,
       retryDelay: options.retryDelay || globalSettings.retryDelay || 2000,

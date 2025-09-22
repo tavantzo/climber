@@ -1,0 +1,139 @@
+# Example configuration with custom commands and project groups
+# This file demonstrates how to configure custom commands for different project types
+
+root: /Users/developer/my-services
+
+projects:
+  - name: insights
+    path: analytics/insights
+    description: Ruby on Rails analytics service
+  - name: sentinel
+    path: security/sentinel
+    description: Ruby on Rails security monitoring service
+  - name: api-gateway
+    path: gateway/api
+    description: Node.js API gateway
+  - name: frontend
+    path: web/frontend
+    description: React frontend application
+  - name: database
+    path: infrastructure/database
+    description: PostgreSQL database service
+
+# Project groups for organizing related projects
+groups:
+  ruby-projects:
+    - insights
+    - sentinel
+  frontend-projects:
+    - frontend
+    - api-gateway
+  infrastructure:
+    - database
+
+# Custom commands for running project-specific operations
+customCommands:
+  bundle-install:
+    description: Install Ruby gems for Rails projects
+    command: bundle install
+    target: ruby-projects
+    interactive: false
+    parallel: true
+
+  bundle-exec:
+    description: Run bundle exec commands (interactive)
+    command: bundle exec
+    target: ruby-projects
+    interactive: true
+    parallel: false
+
+  rails-console:
+    description: Open Rails console
+    command: bundle exec rails console
+    target: ruby-projects
+    interactive: true
+    parallel: false
+
+  rails-migrate:
+    description: Run database migrations
+    command: bundle exec rails db:migrate
+    target: ruby-projects
+    interactive: false
+    parallel: false
+
+  npm-install:
+    description: Install Node.js dependencies
+    command: npm install
+    target: frontend-projects
+    interactive: false
+    parallel: true
+
+  npm-run-dev:
+    description: Start development server
+    command: npm run dev
+    target: frontend-projects
+    interactive: true
+    parallel: false
+
+  yarn-install:
+    description: Install dependencies with Yarn
+    command: yarn install
+    target: frontend-projects
+    interactive: false
+    parallel: true
+
+  test-all:
+    description: Run all tests across projects
+    command: npm test
+    target: all
+    interactive: false
+    parallel: true
+
+  lint-all:
+    description: Run linting across all projects
+    command: npm run lint
+    target: all
+    interactive: false
+    parallel: true
+
+  docker-build:
+    description: Build Docker images for all projects
+    command: docker build -t ${PROJECT_NAME} .
+    target: all
+    interactive: false
+    parallel: true
+
+  git-status:
+    description: Check git status across all projects
+    command: git status
+    target: all
+    interactive: false
+    parallel: true
+
+  git-pull:
+    description: Pull latest changes from git
+    command: git pull origin main
+    target: all
+    interactive: false
+    parallel: true
+
+# Service dependencies
+dependencies:
+  insights: [database]
+  sentinel: [database]
+  api-gateway: [insights, sentinel]
+  frontend: [api-gateway]
+
+# Environment-specific configurations
+environments:
+  default:
+    description: Default environment
+    projects: [database, insights, sentinel, api-gateway, frontend]
+
+  development:
+    description: Development environment
+    projects: [database, insights, sentinel, frontend]
+
+  production:
+    description: Production environment
+    projects: [database, insights, sentinel, api-gateway, frontend]

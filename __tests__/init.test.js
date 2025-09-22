@@ -384,7 +384,7 @@ describe('Init Integration Tests', () => {
 
   test('should handle all readiness check types', async () => {
     const readinessTypes = ['http', 'port', 'command', 'docker'];
-    
+
     for (const type of readinessTypes) {
       // Mock inquirer responses for each type
       const mockPrompt = jest.fn()
@@ -394,7 +394,7 @@ describe('Init Integration Tests', () => {
 
       // Mock input prompts based on type
       const mockPromptInput = jest.fn();
-      
+
       switch (type) {
         case 'http':
           mockPromptInput

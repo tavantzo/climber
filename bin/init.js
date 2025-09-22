@@ -381,7 +381,10 @@ async function main() {
     // Step 5: Configure global dependency readiness settings
     await configureGlobalDependencySettings();
 
-    // Step 6: Show configuration summary and save
+    // Step 6: Configure custom commands
+    await configureCustomCommands();
+
+    // Step 7: Show configuration summary and save
     await showConfigurationAndSave();
 
   } catch (error) {
@@ -392,7 +395,7 @@ async function main() {
 
 async function configureReadinessCheck(projectName) {
   console.log(chalk.cyan(`\n🔍 Configuring dependency readiness checking for "${projectName}"`));
-  
+
   const readinessTypes = [
     { name: 'HTTP Health Check - Check if service responds to HTTP endpoint', value: 'http' },
     { name: 'Port Availability - Check if port is open and accepting connections', value: 'port' },
@@ -565,7 +568,7 @@ async function configureDependencies() {
 async function configureGlobalDependencySettings() {
   // Check if any projects have readiness checks configured
   const projectsWithReadiness = config.projects.filter(project => project['readiness']);
-  
+
   if (projectsWithReadiness.length === 0) {
     return; // No readiness checks configured, skip global settings
   }
@@ -592,6 +595,156 @@ async function configureGlobalDependencySettings() {
   console.log(chalk.gray(`   Max Retries: ${config.dependencyReadiness.maxRetries}`));
   console.log(chalk.gray(`   Retry Delay: ${config.dependencyReadiness.retryDelay}ms`));
   console.log(chalk.gray(`   Default Timeout: ${config.dependencyReadiness.timeout}ms\n`));
+}
+
+async function configureCustomCommands() {
+  console.log(chalk.cyan(`\n🔧 Configuring custom commands`));
+  console.log(chalk.gray(`Custom commands allow you to run project-specific commands like bundle exec, npm run, etc.`));
+
+  const addCustomCommands = await promptYesNo('Would you like to configure custom commands?', false);
+  if (!addCustomCommands) {
+    return;
+  }
+
+  config.customCommands = {};
+  config.groups = {};
+
+  // Configure project groups first
+  const addGroups = await promptYesNo('Would you like to create project groups (e.g., ruby-projects, frontend-projects)?', false);
+  if (addGroups) {
+    await configureProjectGroups();
+  }
+
+  // Configure custom commands
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const commandName = await promptInput('Enter custom command name (or press Enter to finish): ');
+    if (!commandName || commandName.trim().length === 0) {
+      break;
+    }
+
+    const command = await configureCustomCommand(commandName.trim());
+    config.customCommands[commandName.trim()] = command;
+    
+    console.log(chalk.green(`✓ Added custom command: ${commandName.trim()}\n`));
+  }
+}
+
+async function configureProjectGroups() {
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const groupName = await promptInput('Enter group name (or press Enter to finish): ');
+    if (!groupName || groupName.trim().length === 0) {
+      break;
+    }
+
+    const projectChoices = config.projects.map(project => ({
+      name: `${project.name}${project.description ? ` - ${project.description}` : ''}`,
+      value: project.name,
+      short: project.name
+    }));
+
+    const { selectedProjects } = await inquirer['prompt']([{
+      type: 'checkbox',
+      name: 'selectedProjects',
+      message: `Select projects for group "${groupName.trim()}":`,
+      choices: projectChoices
+    }]);
+
+    if (selectedProjects.length > 0) {
+      config.groups[groupName.trim()] = selectedProjects;
+      console.log(chalk.green(`✓ Created group "${groupName.trim()}" with projects: ${selectedProjects.join(', ')}\n`));
+    } else {
+      console.log(chalk.yellow(`Skipping empty group "${groupName.trim()}"\n`));
+    }
+  }
+}
+
+async function configureCustomCommand(commandName) {
+  console.log(chalk.cyan(`\n🔧 Configuring custom command: "${commandName}"`));
+
+  const description = await promptInput(`Enter description for "${commandName}" (optional): `);
+  const command = await promptInput(`Enter command to execute (e.g., bundle exec rails console): `);
+  
+  // Configure default target
+  const targetChoices = [
+    { name: 'All projects', value: 'all' },
+    { name: 'Specific projects', value: 'specific' },
+    { name: 'Project group', value: 'group' }
+  ];
+
+  const { targetType } = await inquirer['prompt']([{
+    type: 'list',
+    name: 'targetType',
+    message: 'Default target for this command:',
+    choices: targetChoices
+  }]);
+
+  let defaultTarget = 'all';
+
+  switch (targetType) {
+    case 'specific':
+      const projectChoices = config.projects.map(project => ({
+        name: `${project.name}${project.description ? ` - ${project.description}` : ''}`,
+        value: project.name,
+        short: project.name
+      }));
+
+      const { selectedProjects } = await inquirer['prompt']([{
+        type: 'checkbox',
+        name: 'selectedProjects',
+        message: 'Select default target projects:',
+        choices: projectChoices
+      }]);
+
+      if (selectedProjects.length > 0) {
+        defaultTarget = selectedProjects;
+      }
+      break;
+
+    case 'group':
+      if (Object.keys(config.groups || {}).length > 0) {
+        const groupChoices = Object.keys(config.groups).map(groupName => ({
+          name: `${groupName} (${config.groups[groupName].join(', ')})`,
+          value: groupName,
+          short: groupName
+        }));
+
+        const { selectedGroup } = await inquirer['prompt']([{
+          type: 'list',
+          name: 'selectedGroup',
+          message: 'Select default target group:',
+          choices: groupChoices
+        }]);
+
+        defaultTarget = selectedGroup;
+      } else {
+        console.log(chalk.yellow('No groups available, using "all" as default target'));
+      }
+      break;
+  }
+
+  // Configure execution options
+  const interactive = await promptYesNo('Run in interactive mode by default?', false);
+  const parallel = await promptYesNo('Run in parallel across projects by default?', false);
+
+  const commandConfig = {
+    description: description.trim(),
+    command: command.trim(),
+    target: defaultTarget,
+    interactive,
+    parallel
+  };
+
+  // Show configuration summary
+  console.log(chalk.green(`\n✓ Custom command "${commandName}" configured:`));
+  console.log(chalk.gray(`   Description: ${commandConfig.description || 'None'}`));
+  console.log(chalk.gray(`   Command: ${commandConfig.command}`));
+  console.log(chalk.gray(`   Default Target: ${Array.isArray(commandConfig.target) ? commandConfig.target.join(', ') : commandConfig.target}`));
+  console.log(chalk.gray(`   Interactive: ${commandConfig.interactive ? 'Yes' : 'No'}`));
+  console.log(chalk.gray(`   Parallel: ${commandConfig.parallel ? 'Yes' : 'No'}\n`));
+
+  return commandConfig;
 }
 
 async function showConfigurationAndSave() {

@@ -146,6 +146,7 @@ climb logs
 - `climb logs [projects...]`: View logs from all services or specific projects with follow mode support.
 - `climb restart [projects...]`: Restart all or specific services.
 - `climb clean`: Clean up unused Docker resources.
+- `climb run [command] [targets...]`: Execute custom commands on projects or groups.
 
 ### Configuration & Workspace Management
 - `climb config`: Show current configuration and environment status.
@@ -427,6 +428,120 @@ climb up api frontend --max-retries=30 --retry-delay=2000
 - `--retry-delay=N`: Delay between retries in milliseconds (default: 2000)
 - `--timeout=N`: Timeout for individual readiness checks in milliseconds (default: 5000)
 
+### Custom Commands
+
+Mountain Climber supports custom commands that can be executed across projects, groups, or the entire workspace. This is perfect for running project-specific commands like `bundle exec`, `npm run`, `yarn`, etc.
+
+#### Configuration
+
+Custom commands are configured in your workspace configuration:
+
+```yaml
+# Project groups for organizing related projects
+groups:
+  ruby-projects:
+    - insights
+    - sentinel
+  frontend-projects:
+    - frontend
+    - api-gateway
+
+# Custom commands
+customCommands:
+  bundle-install:
+    description: Install Ruby gems for Rails projects
+    command: bundle install
+    target: ruby-projects
+    interactive: false
+    parallel: true
+
+  rails-console:
+    description: Open Rails console
+    command: bundle exec rails console
+    target: ruby-projects
+    interactive: true
+    parallel: false
+
+  npm-install:
+    description: Install Node.js dependencies
+    command: npm install
+    target: frontend-projects
+    interactive: false
+    parallel: true
+```
+
+#### Command Line Usage
+
+```bash
+# Run custom command on specific projects
+climb run bundle-install insights sentinel
+
+# Run custom command on project group
+climb run bundle-install ruby-projects
+
+# Run custom command on all projects
+climb run bundle-install all
+
+# Run in parallel across projects
+climb run bundle-install ruby-projects --parallel
+
+# Run in interactive mode
+climb run rails-console insights --interactive
+
+# List available custom commands
+climb run --list
+
+# Interactive mode (select command and targets)
+climb run
+```
+
+#### Command Options
+
+- `--interactive` or `-i`: Run command in interactive mode (inherit stdio)
+- `--parallel` or `-p`: Run commands in parallel across projects
+- `--continue-on-error` or `-c`: Continue execution even if some commands fail
+- `--list` or `-l`: List available custom commands and groups
+- `--help` or `-h`: Show help message
+
+#### Examples
+
+```bash
+# Ruby on Rails projects
+climb run bundle-install ruby-projects
+climb run rails-console insights
+climb run rails-migrate ruby-projects
+
+# Node.js projects
+climb run npm-install frontend-projects
+climb run npm-run-dev frontend --interactive
+
+# Git operations across all projects
+climb run git-status all
+climb run git-pull all --parallel
+
+# Testing and linting
+climb run test-all all --parallel
+climb run lint-all frontend-projects
+```
+
+#### Interactive Configuration
+
+Custom commands can be configured during the init process:
+
+```bash
+climb init
+# ... standard init steps ...
+# Would you like to configure custom commands? (y/N)
+# Would you like to create project groups? (y/N)
+# Enter group name: ruby-projects
+# Select projects for group "ruby-projects": [insights, sentinel]
+# Enter custom command name: bundle-install
+# Enter command to execute: bundle install
+# Default target for this command: [All projects, Specific projects, Project group]
+# Run in interactive mode by default? (y/N)
+# Run in parallel across projects by default? (y/N)
+```
+
 ### Configuration File
 
 The configuration is stored in `~/.climber-config/config.yaml` and supports:
@@ -540,8 +655,16 @@ The project uses GitHub Actions for:
 - Force removal options
 - Comprehensive cleanup strategies
 
+### 🔧 **Custom Commands**
+- Execute project-specific commands across multiple projects
+- Support for project groups (e.g., ruby-projects, frontend-projects)
+- Parallel and sequential execution modes
+- Interactive and non-interactive command execution
+- Command-line and interactive target selection
+- Perfect for bundle exec, npm run, yarn, git operations, etc.
+
 ### 🧪 **Quality Assurance**
-- 186 comprehensive tests
+- 234 comprehensive tests
 - 47%+ code coverage
 - ESLint code quality enforcement
 - Cross-platform compatibility testing

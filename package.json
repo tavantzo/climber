@@ -15,7 +15,8 @@
     "climb-restart": "./bin/restart.js",
     "climb-clean": "./bin/clean.js",
     "climb-config": "./bin/config-show.js",
-    "climb-workspace": "./bin/workspace.js"
+    "climb-workspace": "./bin/workspace.js",
+    "climb-run": "./bin/run.js"
   },
   "dependencies": {
     "args": "^5.0.1",
