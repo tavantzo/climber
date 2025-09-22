@@ -29,10 +29,13 @@ async function startProject(project, projectPath, index, total, options = {}) {
   if (dependencies.length > 0) {
     console.log(chalk.cyan(`   Checking ${dependencies.length} dependencies...`));
 
+    // Get global dependency readiness settings from config
+    const globalSettings = /** @type {any} */ (configManager.config).dependencyReadiness || {};
+    
     const dependenciesReady = await waitForDependencies(dependencies, projectPath, {
-      maxRetries: options.maxRetries || 30,
-      retryDelay: options.retryDelay || 2000,
-      timeout: options.timeout || 5000
+      maxRetries: options.maxRetries || globalSettings.maxRetries || 30,
+      retryDelay: options.retryDelay || globalSettings.retryDelay || 2000,
+      timeout: options.timeout || globalSettings.timeout || 5000
     });
 
     if (!dependenciesReady) {

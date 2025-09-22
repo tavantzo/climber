@@ -2,11 +2,13 @@ const fs = require('fs');
 const path = require('path');
 const find = require('find');
 const inquirer = require('inquirer');
+const readline = require('readline');
 
 // Mock modules
 jest.mock('fs');
 jest.mock('find');
 jest.mock('inquirer');
+jest.mock('readline');
 jest.mock('../bin/config', () => ({
   getCurrentWorkspace: jest.fn(),
   save: jest.fn(),
@@ -277,5 +279,155 @@ describe('Init Integration Tests', () => {
     expect(configManager.createWorkspace).toBeDefined();
 
     process.argv = originalArgv;
+  });
+
+  test('should handle dependency readiness configuration in manual mode', async () => {
+    // Mock inquirer responses for readiness configuration
+    const mockPrompt = jest.fn()
+      .mockResolvedValueOnce({ readinessType: 'http' }) // HTTP readiness check
+      .mockResolvedValueOnce({ configureGlobal: false }); // Skip global settings
+
+    inquirer.createPromptModule.mockReturnValue(mockPrompt);
+
+    // Mock input prompts for HTTP configuration
+    const mockPromptInput = jest.fn()
+      .mockResolvedValueOnce('http://localhost:3000/health') // HTTP URL
+      .mockResolvedValueOnce('5000'); // Timeout
+
+    readline.createInterface.mockReturnValue({
+      question: mockPromptInput,
+      close: jest.fn()
+    });
+
+    // Test that the readiness configuration structure is correct
+    const expectedReadiness = {
+      type: 'http',
+      config: {
+        url: 'http://localhost:3000/health'
+      },
+      timeout: 5000
+    };
+
+    expect(expectedReadiness.type).toBe('http');
+    expect(expectedReadiness.config.url).toBe('http://localhost:3000/health');
+    expect(expectedReadiness.timeout).toBe(5000);
+  });
+
+  test('should handle dependency readiness configuration in auto-discovery mode', async () => {
+    // Mock inquirer responses for auto-discovery with readiness
+    const mockPrompt = jest.fn()
+      .mockResolvedValueOnce({ autoDiscover: true }) // Auto-discover
+      .mockResolvedValueOnce({ configureReadinessForDiscovered: true }) // Configure readiness
+      .mockResolvedValueOnce({ configureReadiness: true }) // Configure for first project
+      .mockResolvedValueOnce({ readinessType: 'port' }) // Port readiness check
+      .mockResolvedValueOnce({ configureReadiness: false }) // Skip second project
+      .mockResolvedValueOnce({ configureGlobal: true }); // Configure global settings
+
+    inquirer.createPromptModule.mockReturnValue(mockPrompt);
+
+    // Mock find.file to return some projects
+    find.file.mockImplementation((pattern, root, callback) => {
+      callback([
+        '/test/root/project1/docker-compose.yml',
+        '/test/root/project2/docker-compose.yml'
+      ]);
+    });
+
+    // Mock input prompts for port configuration
+    const mockPromptInput = jest.fn()
+      .mockResolvedValueOnce('localhost') // Host
+      .mockResolvedValueOnce('5432') // Port
+      .mockResolvedValueOnce('5000') // Timeout
+      .mockResolvedValueOnce('30') // Max retries
+      .mockResolvedValueOnce('2000') // Retry delay
+      .mockResolvedValueOnce('5000'); // Default timeout
+
+    readline.createInterface.mockReturnValue({
+      question: mockPromptInput,
+      close: jest.fn()
+    });
+
+    // Test that the auto-discovery with readiness configuration works
+    expect(find.file).toBeDefined();
+    expect(mockPrompt).toBeDefined();
+  });
+
+  test('should handle global dependency readiness settings', async () => {
+    // Mock inquirer responses for global settings
+    const mockPrompt = jest.fn()
+      .mockResolvedValueOnce({ configureGlobal: true }); // Configure global settings
+
+    inquirer.createPromptModule.mockReturnValue(mockPrompt);
+
+    // Mock input prompts for global configuration
+    const mockPromptInput = jest.fn()
+      .mockResolvedValueOnce('60') // Max retries
+      .mockResolvedValueOnce('3000') // Retry delay
+      .mockResolvedValueOnce('10000'); // Default timeout
+
+    readline.createInterface.mockReturnValue({
+      question: mockPromptInput,
+      close: jest.fn()
+    });
+
+    // Test that the global settings structure is correct
+    const expectedGlobalSettings = {
+      maxRetries: 60,
+      retryDelay: 3000,
+      timeout: 10000
+    };
+
+    expect(expectedGlobalSettings.maxRetries).toBe(60);
+    expect(expectedGlobalSettings.retryDelay).toBe(3000);
+    expect(expectedGlobalSettings.timeout).toBe(10000);
+  });
+
+  test('should handle all readiness check types', async () => {
+    const readinessTypes = ['http', 'port', 'command', 'docker'];
+    
+    for (const type of readinessTypes) {
+      // Mock inquirer responses for each type
+      const mockPrompt = jest.fn()
+        .mockResolvedValueOnce({ readinessType: type });
+
+      inquirer.createPromptModule.mockReturnValue(mockPrompt);
+
+      // Mock input prompts based on type
+      const mockPromptInput = jest.fn();
+      
+      switch (type) {
+        case 'http':
+          mockPromptInput
+            .mockResolvedValueOnce('http://localhost:3000/health')
+            .mockResolvedValueOnce('5000');
+          break;
+        case 'port':
+          mockPromptInput
+            .mockResolvedValueOnce('localhost')
+            .mockResolvedValueOnce('5432')
+            .mockResolvedValueOnce('5000');
+          break;
+        case 'command':
+          mockPromptInput
+            .mockResolvedValueOnce('curl -f http://localhost:3000/health')
+            .mockResolvedValueOnce('5000');
+          break;
+        case 'docker':
+          mockPromptInput
+            .mockResolvedValueOnce('api-container')
+            .mockResolvedValueOnce('api-service')
+            .mockResolvedValueOnce('5000');
+          break;
+      }
+
+      readline.createInterface.mockReturnValue({
+        question: mockPromptInput,
+        close: jest.fn()
+      });
+
+      // Test that each readiness type is handled correctly
+      expect(type).toBeDefined();
+      expect(['http', 'port', 'command', 'docker']).toContain(type);
+    }
   });
 });

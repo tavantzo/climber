@@ -181,7 +181,7 @@ function getCommonPrefix(strings) {
     const char = first[i];
     if (strings.every(str => str[i] === char)) {
       prefix += char;
-    } else {
+        } else {
       break;
     }
   }
@@ -329,7 +329,7 @@ async function main() {
           if (!files || files.length === 0) {
             console.log(chalk.yellow('No docker-compose files found. Switching to manual mode.\n'));
             resolve(undefined);
-          } else {
+    } else {
             files.forEach((file) => {
               const projectPath = path.dirname(file);
               const projectName = projectPath.split(path.sep).pop();
@@ -347,6 +347,19 @@ async function main() {
           }
         });
       });
+
+      // Ask if user wants to configure readiness checks for auto-discovered projects
+      if (config.projects.length > 0) {
+        const configureReadinessForDiscovered = await promptYesNo('Would you like to configure dependency readiness checking for the discovered projects?', false);
+        if (configureReadinessForDiscovered) {
+          for (const project of config.projects) {
+            const configureReadiness = await promptYesNo(`Configure readiness checking for "${project.name}"?`, false);
+            if (configureReadiness) {
+              project['readiness'] = await configureReadinessCheck(project.name);
+            }
+          }
+        }
+      }
     }
 
     // Step 3: Manual project addition if no auto-discovery or user wants to add more
@@ -365,6 +378,9 @@ async function main() {
     // Step 5: Configure dependencies
     await configureDependencies();
 
+    // Step 5: Configure global dependency readiness settings
+    await configureGlobalDependencySettings();
+
     // Step 6: Show configuration summary and save
     await showConfigurationAndSave();
 
@@ -372,6 +388,73 @@ async function main() {
     console.error(chalk.red('Error during configuration:'), error.message);
     process.exit(1);
   }
+}
+
+async function configureReadinessCheck(projectName) {
+  console.log(chalk.cyan(`\n🔍 Configuring dependency readiness checking for "${projectName}"`));
+  
+  const readinessTypes = [
+    { name: 'HTTP Health Check - Check if service responds to HTTP endpoint', value: 'http' },
+    { name: 'Port Availability - Check if port is open and accepting connections', value: 'port' },
+    { name: 'Custom Command - Execute custom script to check service readiness', value: 'command' },
+    { name: 'Docker Service Status - Check if Docker container is running and healthy', value: 'docker' }
+  ];
+
+  const { readinessType } = await inquirer['prompt']([{
+    type: 'list',
+    name: 'readinessType',
+    message: 'Select readiness check type:',
+    choices: readinessTypes
+  }]);
+
+  const readiness = {
+    type: readinessType,
+    config: {},
+    timeout: 5000
+  };
+
+  // Configure based on readiness type
+  switch (readinessType) {
+    case 'http':
+      const httpUrl = await promptInput('Enter health check URL (e.g., http://localhost:3000/health): ');
+      const httpTimeout = await promptInput('Enter timeout in milliseconds (default: 5000): ', '5000');
+      readiness.config.url = httpUrl.trim();
+      readiness.timeout = parseInt(httpTimeout.trim(), 10) || 5000;
+      break;
+
+    case 'port':
+      const portHost = await promptInput('Enter host (default: localhost): ', 'localhost');
+      const portPort = await promptInput('Enter port number: ');
+      const portTimeout = await promptInput('Enter timeout in milliseconds (default: 5000): ', '5000');
+      readiness.config.host = portHost.trim() || 'localhost';
+      readiness.config.port = parseInt(portPort.trim(), 10);
+      readiness.timeout = parseInt(portTimeout.trim(), 10) || 5000;
+      break;
+
+    case 'command':
+      const commandCmd = await promptInput('Enter command to execute (e.g., curl -f http://localhost:3000/health): ');
+      const commandTimeout = await promptInput('Enter timeout in milliseconds (default: 5000): ', '5000');
+      readiness.config.command = commandCmd.trim();
+      readiness.timeout = parseInt(commandTimeout.trim(), 10) || 5000;
+      break;
+
+    case 'docker':
+      const dockerContainer = await promptInput('Enter container name or pattern: ');
+      const dockerService = await promptInput('Enter service name: ');
+      const dockerTimeout = await promptInput('Enter timeout in milliseconds (default: 5000): ', '5000');
+      readiness.config.container = dockerContainer.trim();
+      readiness.config.service = dockerService.trim();
+      readiness.timeout = parseInt(dockerTimeout.trim(), 10) || 5000;
+      break;
+  }
+
+  // Show configuration summary
+  console.log(chalk.green(`\n✓ Readiness check configured for "${projectName}":`));
+  console.log(chalk.gray(`   Type: ${readinessType}`));
+  console.log(chalk.gray(`   Config: ${JSON.stringify(readiness.config, null, 2)}`));
+  console.log(chalk.gray(`   Timeout: ${readiness.timeout}ms\n`));
+
+  return readiness;
 }
 
 async function addProjectsManually() {
@@ -386,11 +469,19 @@ async function addProjectsManually() {
     const projectPath = await promptWithTabCompletion(`Enter path for project "${projectName}" (relative to ${config.root}): `, projectName);
     const description = await promptInput(`Enter description for "${projectName}" (optional): `, `Project: ${projectName}`);
 
-    config.projects.push({
+    const project = {
       name: projectName,
       path: projectPath.trim(),
       description: description.trim()
-    });
+    };
+
+    // Configure dependency readiness checking
+    const configureReadiness = await promptYesNo(`Would you like to configure dependency readiness checking for "${projectName}"?`, false);
+    if (configureReadiness) {
+      project.readiness = await configureReadinessCheck(projectName);
+    }
+
+    config.projects.push(project);
     config.environments.default.projects.push(projectName);
 
     console.log(chalk.green(`✓ Added project: ${projectName}\n`));
@@ -469,6 +560,38 @@ async function configureDependencies() {
       console.log(chalk.green(`✓ Added dependencies for: ${project.name}\n`));
     }
   }
+}
+
+async function configureGlobalDependencySettings() {
+  // Check if any projects have readiness checks configured
+  const projectsWithReadiness = config.projects.filter(project => project['readiness']);
+  
+  if (projectsWithReadiness.length === 0) {
+    return; // No readiness checks configured, skip global settings
+  }
+
+  console.log(chalk.cyan(`\n🔧 Configuring global dependency readiness settings`));
+  console.log(chalk.gray(`Found ${projectsWithReadiness.length} projects with readiness checks configured.`));
+
+  const configureGlobal = await promptYesNo('Would you like to configure global dependency readiness settings?', false);
+  if (!configureGlobal) {
+    return;
+  }
+
+  const maxRetries = await promptInput('Enter maximum retry attempts (default: 30): ', '30');
+  const retryDelay = await promptInput('Enter retry delay in milliseconds (default: 2000): ', '2000');
+  const defaultTimeout = await promptInput('Enter default timeout in milliseconds (default: 5000): ', '5000');
+
+  config.dependencyReadiness = {
+    maxRetries: parseInt(maxRetries.trim(), 10) || 30,
+    retryDelay: parseInt(retryDelay.trim(), 10) || 2000,
+    timeout: parseInt(defaultTimeout.trim(), 10) || 5000
+  };
+
+  console.log(chalk.green(`\n✓ Global dependency readiness settings configured:`));
+  console.log(chalk.gray(`   Max Retries: ${config.dependencyReadiness.maxRetries}`));
+  console.log(chalk.gray(`   Retry Delay: ${config.dependencyReadiness.retryDelay}ms`));
+  console.log(chalk.gray(`   Default Timeout: ${config.dependencyReadiness.timeout}ms\n`));
 }
 
 async function showConfigurationAndSave() {
