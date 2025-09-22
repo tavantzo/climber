@@ -100,7 +100,7 @@ Specify project names as arguments to target specific projects:
 # Start only specific projects
 climb up insights sentinel
 
-# Stop only specific projects  
+# Stop only specific projects
 climb down insights
 
 # Get logs from specific projects
@@ -117,7 +117,7 @@ When no projects are specified, Mountain Climber shows an interactive checkbox m
 ```bash
 # Shows interactive menu to select projects
 climb up
-climb down  
+climb down
 climb logs
 ```
 
@@ -125,7 +125,7 @@ climb logs
 ```
 ? Select projects to start: (Press <space> to select, <a> to toggle all, <i> to invert selection)
 ❯◉ insights - Analytics and monitoring service
- ◉ sentinel - Security monitoring service  
+ ◉ sentinel - Security monitoring service
  ◉ api-gateway - Main API gateway
  ◉ database - PostgreSQL database
 ```
