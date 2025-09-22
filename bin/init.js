@@ -55,6 +55,7 @@ function isValidDirectory(dirPath) {
 }
 
 // Shell-like tab completion for directory paths
+// eslint-disable-next-line no-unused-vars
 function getTabCompletion(input) {
   if (!input || input.trim() === '') {
     return { completed: home || process.env.HOME || '/', matches: [] };
@@ -98,7 +99,7 @@ function getTabCompletion(input) {
       // Single match - return the completed path
       const completedPath = path.join(dirname, matchingContents[0]);
       // Convert back to original format, preserving the prefix
-      let returnPath = convertToOriginalFormat(completedPath, originalInput);
+      const returnPath = convertToOriginalFormat(completedPath, originalInput);
       return {
         completed: returnPath,
         matches: [matchingContents[0]]
@@ -108,7 +109,7 @@ function getTabCompletion(input) {
       const commonPrefix = getCommonPrefix(matchingContents);
       const completedPath = path.join(dirname, commonPrefix);
       // Convert back to original format, preserving the prefix
-      let returnPath = convertToOriginalFormat(completedPath, originalInput);
+      const returnPath = convertToOriginalFormat(completedPath, originalInput);
       return {
         completed: returnPath,
         matches: matchingContents
@@ -374,6 +375,7 @@ async function main() {
 }
 
 async function addProjectsManually() {
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const name = await promptInput('Enter project name (or press Enter to finish): ');
     if (!name || name.trim().length === 0) {
@@ -401,6 +403,7 @@ async function configureEnvironments() {
     return;
   }
 
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const envName = await promptInput('Enter environment name (or press Enter to finish): ');
     if (!envName || envName.trim().length === 0) {
@@ -436,6 +439,7 @@ async function configureDependencies() {
     return;
   }
 
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     console.log(chalk.blue('\nAvailable projects:'));
     config.projects.forEach((project, index) => {

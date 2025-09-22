@@ -24,7 +24,7 @@ const configManager = require('./config');
           console.log(chalk.gray(`   ${project.description}`));
         }
 
-        const result = await dc.upAll({
+        await dc.upAll({
           log: false,
           cwd: folder,
           commandOptions: ['--build', '--remove-orphans', '--force-recreate']
