@@ -4,7 +4,9 @@ const chalk = require('chalk');
 const path = require('path');
 const configManager = require('./config');
 
-(async function() {
+// Only run if this file is executed directly, not when imported
+if (require.main === module) {
+  (async function() {
   try {
     const args = process.argv.slice(2);
     const follow = args.includes('--follow') || args.includes('-f');
@@ -148,4 +150,5 @@ const configManager = require('./config');
     console.error(chalk.red('Error fetching logs:'), error.message);
     process.exit(1);
   }
-})();
+  })();
+}

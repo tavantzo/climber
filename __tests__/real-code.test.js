@@ -18,6 +18,16 @@ jest.mock('chalk', () => ({
   cyan: jest.fn((text) => text),
 }));
 
+// Mock console.warn to suppress circular dependency warnings
+const originalConsoleWarn = console.warn;
+beforeAll(() => {
+  console.warn = jest.fn();
+});
+
+afterAll(() => {
+  console.warn = originalConsoleWarn;
+});
+
 describe('Real Code Execution Tests', () => {
   let mockConsoleLog;
   let mockConsoleError;

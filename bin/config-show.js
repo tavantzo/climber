@@ -2,7 +2,9 @@
 const chalk = require('chalk');
 const configManager = require('./config');
 
-(async function() {
+// Only run if this file is executed directly, not when imported
+if (require.main === module) {
+  (async function() {
   try {
     const environment = process.env.CLIMBER_ENV || 'default';
 
@@ -74,4 +76,5 @@ const configManager = require('./config');
     console.error(chalk.red('Error showing configuration:'), error.message);
     process.exit(1);
   }
-})();
+  })();
+}
