@@ -74,7 +74,7 @@ function listWorkspaces() {
 async function createWorkspace(name, description = '') {
   if (!name) {
     console.error(chalk.red('Error: Workspace name is required'));
-    console.log(chalk.yellow('Usage: climb workspace create <name> [description]'));
+    console.log(chalk.yellow('Usage: climb workspace create <name> [description] [--import <file>]'));
     process.exit(1);
   }
 
@@ -83,6 +83,20 @@ async function createWorkspace(name, description = '') {
     if (configManager.listWorkspaces().includes(name)) {
       console.error(chalk.red(`Error: Workspace "${name}" already exists`));
       process.exit(1);
+    }
+
+    // Check for import option
+    const importIndex = args.indexOf('--import');
+    const importFile = importIndex !== -1 ? args[importIndex + 1] : null;
+
+    if (importFile) {
+      console.log(chalk.blue(`🚀 Creating workspace "${name}" from imported configuration...`));
+      console.log(chalk.gray(`   Description: ${description || 'No description provided'}`));
+      console.log(chalk.gray(`   Import file: ${importFile}`));
+      
+      configManager.createWorkspaceFromImport(name, importFile, true, description);
+      console.log(chalk.green(`✅ Workspace "${name}" created successfully!`));
+      return;
     }
 
     console.log(chalk.blue(`🚀 Creating workspace "${name}"...`));
@@ -224,6 +238,7 @@ function showHelp() {
   console.log(chalk.blue('\n💡 Examples:'));
   console.log(chalk.gray('  climb workspace list'));
   console.log(chalk.gray('  climb workspace create my-project "My awesome project"'));
+  console.log(chalk.gray('  climb workspace create my-project "My project" --import config.yaml'));
   console.log(chalk.gray('  climb workspace switch my-project'));
   console.log(chalk.gray('  CLIMBER_WORKSPACE=my-project climb up'));
 

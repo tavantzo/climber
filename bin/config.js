@@ -462,6 +462,129 @@ class ConfigManager {
       throw error;
     }
   }
+
+  /**
+   * Import configuration from a file or string
+   * @param {string} source - File path or YAML string
+   * @param {boolean} isFile - Whether source is a file path (true) or YAML string (false)
+   * @returns {Object} Parsed configuration object
+   */
+  importConfiguration(source, isFile = true) {
+    try {
+      let configData;
+      
+      if (isFile) {
+        if (!fs.existsSync(source)) {
+          throw new Error(`Configuration file not found: ${source}`);
+        }
+        const buffer = fs.readFileSync(source, { encoding: 'utf8' });
+        configData = yaml.load(buffer);
+      } else {
+        configData = yaml.load(source);
+      }
+
+      if (!configData || typeof configData !== 'object') {
+        throw new Error('Invalid configuration format');
+      }
+
+      // Remove export metadata if present
+      if (configData._exported) {
+        delete configData._exported;
+      }
+
+      // Validate the imported configuration
+      this.validateConfig(configData);
+
+      return configData;
+    } catch (error) {
+      console.error(chalk.red('Error importing configuration:'), error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Create workspace from imported configuration
+   * @param {string} workspaceName - Name for the new workspace
+   * @param {string} source - File path or YAML string
+   * @param {boolean} isFile - Whether source is a file path (true) or YAML string (false)
+   * @param {string} description - Optional description for the workspace
+   */
+  createWorkspaceFromImport(workspaceName, source, isFile = true, description = null) {
+    try {
+      // Check if workspace already exists
+      if (this.listWorkspaces().includes(workspaceName)) {
+        throw new Error(`Workspace "${workspaceName}" already exists`);
+      }
+
+      // Import the configuration
+      const config = this.importConfiguration(source, isFile);
+
+      // Create workspaces directory
+      const workspacesDir = path.join(this.configDir, 'workspaces');
+      if (!fs.existsSync(workspacesDir)) {
+        fs.mkdirSync(workspacesDir, { recursive: true });
+      }
+
+      // Save the imported configuration
+      const configFile = path.join(workspacesDir, `${workspaceName}.yaml`);
+      fs.writeFileSync(configFile, yaml.dump(config, {
+        indent: 2,
+        lineWidth: -1,
+        noRefs: true
+      }));
+
+      // Update workspaces registry
+      this.addWorkspaceToRegistry(workspaceName, description || `Imported workspace from ${isFile ? source : 'configuration'}`);
+
+      console.log(chalk.green(`✅ Workspace "${workspaceName}" created successfully from imported configuration`));
+      console.log(chalk.gray(`Configuration file: ${configFile}`));
+
+    } catch (error) {
+      console.error(chalk.red('Error creating workspace from import:'), error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Add workspace to registry without overwriting existing workspaces
+   * @param {string} name - Workspace name
+   * @param {string} description - Workspace description
+   */
+  addWorkspaceToRegistry(name, description) {
+    try {
+      let workspacesRegistry = {};
+      
+      if (fs.existsSync(this.workspacesFile)) {
+        const buffer = fs.readFileSync(this.workspacesFile, { encoding: 'utf8' });
+        workspacesRegistry = yaml.load(buffer) || {};
+      }
+
+      if (!workspacesRegistry.workspaces) {
+        workspacesRegistry.workspaces = {};
+      }
+
+      workspacesRegistry.workspaces[name] = {
+        name: name,
+        description: description,
+        created: new Date().toISOString(),
+        configFile: `${name}.yaml`
+      };
+
+      // Set as current workspace if it's the first one
+      if (!workspacesRegistry.current) {
+        workspacesRegistry.current = name;
+      }
+
+      fs.writeFileSync(this.workspacesFile, yaml.dump(workspacesRegistry, {
+        indent: 2,
+        lineWidth: -1,
+        noRefs: true
+      }));
+    } catch (error) {
+      console.error(chalk.red('Error adding workspace to registry:'), error.message);
+      throw error;
+    }
+  }
 }
 
 module.exports = new ConfigManager();

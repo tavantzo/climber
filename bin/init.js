@@ -306,6 +306,59 @@ async function main() {
     console.log(chalk.cyan(`📁 Current workspace: ${currentWorkspace}\n`));
   }
 
+  // Check for import option
+  const importFile = args.includes('--import') ? args[args.indexOf('--import') + 1] : null;
+  if (importFile) {
+    try {
+      console.log(chalk.blue(`📥 Importing configuration from: ${importFile}\n`));
+      
+      if (workspaceName) {
+        // Create workspace from import
+        configManager.createWorkspaceFromImport(workspaceName, importFile, true, workspaceDescription);
+        console.log(chalk.green('✅ Configuration imported successfully!\n'));
+        return;
+      } else {
+        // Import into current workspace
+        const importedConfig = configManager.importConfiguration(importFile, true);
+        configManager.save(importedConfig);
+        console.log(chalk.green('✅ Configuration imported successfully!\n'));
+        return;
+      }
+    } catch (error) {
+      console.error(chalk.red('❌ Failed to import configuration:'), error.message);
+      process.exit(1);
+    }
+  }
+
+  // Ask if user wants to import configuration
+  const shouldImport = await promptYesNo('Would you like to import an existing configuration file?', false);
+  if (shouldImport) {
+    const importPath = await promptWithTabCompletion('Enter the path to the configuration file: ', '');
+    if (importPath && fs.existsSync(importPath)) {
+      try {
+        console.log(chalk.blue(`📥 Importing configuration from: ${importPath}\n`));
+        
+        if (workspaceName) {
+          // Create workspace from import
+          configManager.createWorkspaceFromImport(workspaceName, importPath, true, workspaceDescription);
+          console.log(chalk.green('✅ Configuration imported successfully!\n'));
+          return;
+        } else {
+          // Import into current workspace
+          const importedConfig = configManager.importConfiguration(importPath, true);
+          configManager.save(importedConfig);
+          console.log(chalk.green('✅ Configuration imported successfully!\n'));
+          return;
+        }
+      } catch (error) {
+        console.error(chalk.red('❌ Failed to import configuration:'), error.message);
+        console.log(chalk.yellow('Continuing with manual setup...\n'));
+      }
+    } else {
+      console.log(chalk.yellow('Invalid file path. Continuing with manual setup...\n'));
+    }
+  }
+
   try {
     // Step 1: Select root directory with tab completion
     const defaultPath = home ? '~' : '/';
