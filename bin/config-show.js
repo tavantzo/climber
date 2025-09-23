@@ -45,12 +45,12 @@ function showConfigHelp() {
   console.log('  climb config --raw              # Show raw YAML configuration');
   console.log('  climb config --export           # Export configuration to stdout');
   console.log('  climb config --help             # Show this help\n');
-  
+
   console.log(chalk.cyan('Options:'));
   console.log('  --raw, -r      Show raw YAML configuration');
   console.log('  --export, -e   Export configuration for backup/import');
   console.log('  --help, -h     Show this help message\n');
-  
+
   console.log(chalk.cyan('Examples:'));
   console.log('  climb config                    # Detailed configuration view');
   console.log('  climb config --raw              # Raw YAML output');
@@ -61,7 +61,7 @@ function exportConfiguration() {
   try {
     configManager.load();
     const config = configManager.config;
-    
+
     // Remove any sensitive information or temporary data
     const exportConfig = {
       ...config,
@@ -72,8 +72,8 @@ function exportConfiguration() {
         workspace: configManager.getCurrentWorkspace()
       }
     };
-    
-    console.log(yaml.dump(exportConfig, { 
+
+    console.log(yaml.dump(exportConfig, {
       indent: 2,
       lineWidth: 120,
       noRefs: true,
@@ -89,9 +89,9 @@ function showRawConfiguration() {
   try {
     configManager.load();
     const config = configManager.config;
-    
+
     console.log(chalk.blue('🔧 Raw Configuration\n'));
-    console.log(yaml.dump(config, { 
+    console.log(yaml.dump(config, {
       indent: 2,
       lineWidth: 120,
       noRefs: true,

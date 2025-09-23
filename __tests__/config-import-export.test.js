@@ -26,7 +26,7 @@ describe('Config Import/Export Functionality', () => {
   beforeEach(() => {
     // Reset all mocks
     jest.clearAllMocks();
-    
+
     // Mock configuration
     mockConfig = {
       root: '/test/root',
@@ -204,7 +204,7 @@ describe('Config Import/Export Functionality', () => {
 
     it('should validate imported configuration', () => {
       const configYaml = yaml.dump(mockConfig);
-      
+
       // Test that importConfiguration validates the config
       const result = configManager.importConfiguration(configYaml, false);
       expect(result).toEqual(mockConfig);

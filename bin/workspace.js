@@ -93,7 +93,7 @@ async function createWorkspace(name, description = '') {
       console.log(chalk.blue(`🚀 Creating workspace "${name}" from imported configuration...`));
       console.log(chalk.gray(`   Description: ${description || 'No description provided'}`));
       console.log(chalk.gray(`   Import file: ${importFile}`));
-      
+
       configManager.createWorkspaceFromImport(name, importFile, true, description);
       console.log(chalk.green(`✅ Workspace "${name}" created successfully!`));
       return;

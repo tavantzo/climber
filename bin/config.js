@@ -149,21 +149,23 @@ class ConfigManager {
     }
   }
 
-  validateConfig() {
-    if (!this.config) {
+  validateConfig(configToValidate = null) {
+    const config = configToValidate || this.config;
+    
+    if (!config) {
       throw new Error('Configuration is empty');
     }
 
-    if (!this.config.root) {
+    if (!config.root) {
       throw new Error('Missing required field: root');
     }
 
-    if (!this.config.projects || !Array.isArray(this.config.projects)) {
+    if (!config.projects || !Array.isArray(config.projects)) {
       throw new Error('Missing or invalid projects array');
     }
 
     // Validate each project
-    this.config.projects.forEach((project, index) => {
+    config.projects.forEach((project, index) => {
       if (!project || typeof project !== 'object') {
         throw new Error(`Project at index ${index} is not a valid object`);
       }
@@ -472,7 +474,7 @@ class ConfigManager {
   importConfiguration(source, isFile = true) {
     try {
       let configData;
-      
+
       if (isFile) {
         if (!fs.existsSync(source)) {
           throw new Error(`Configuration file not found: ${source}`);
@@ -553,7 +555,7 @@ class ConfigManager {
   addWorkspaceToRegistry(name, description) {
     try {
       let workspacesRegistry = {};
-      
+
       if (fs.existsSync(this.workspacesFile)) {
         const buffer = fs.readFileSync(this.workspacesFile, { encoding: 'utf8' });
         workspacesRegistry = yaml.load(buffer) || {};

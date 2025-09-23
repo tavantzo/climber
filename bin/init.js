@@ -311,7 +311,7 @@ async function main() {
   if (importFile) {
     try {
       console.log(chalk.blue(`📥 Importing configuration from: ${importFile}\n`));
-      
+
       if (workspaceName) {
         // Create workspace from import
         configManager.createWorkspaceFromImport(workspaceName, importFile, true, workspaceDescription);
@@ -337,7 +337,7 @@ async function main() {
     if (importPath && fs.existsSync(importPath)) {
       try {
         console.log(chalk.blue(`📥 Importing configuration from: ${importPath}\n`));
-        
+
         if (workspaceName) {
           // Create workspace from import
           configManager.createWorkspaceFromImport(workspaceName, importPath, true, workspaceDescription);
