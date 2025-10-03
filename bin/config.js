@@ -151,7 +151,7 @@ class ConfigManager {
 
   validateConfig(configToValidate = null) {
     const config = configToValidate || this.config;
-    
+
     if (!config) {
       throw new Error('Configuration is empty');
     }
