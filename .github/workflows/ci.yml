@@ -24,7 +24,7 @@ jobs:
         cache: 'yarn'
 
     - name: Install dependencies
-      run: yarn install --frozen-lockfile
+      run: yarn install
 
     - name: Run linter
       run: yarn lint
@@ -46,7 +46,7 @@ jobs:
 
     - name: Check if package builds
       run: |
-        yarn install --production
+        yarn install --frozen-lockfile --production
         node bin/index.js --help || true
 
     - name: Test release script
