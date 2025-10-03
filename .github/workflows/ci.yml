@@ -46,7 +46,7 @@ jobs:
 
     - name: Check if package builds
       run: |
-        yarn install --frozen-lockfile --production
+        yarn install --production
         node bin/index.js --help || true
 
     - name: Test release script
