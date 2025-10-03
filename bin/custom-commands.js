@@ -12,7 +12,7 @@ const inquirer = require('inquirer');
  * @returns {Promise<Object>} - Command execution result
  */
 async function executeCustomCommand(project, projectPath, command, options = {}) {
-  const { interactive = false, parallel = false } = options;
+  const { interactive = false } = options;
 
   console.log(chalk.blue(`🔧 Running "${command.name}" in ${project.name}...`));
 
@@ -118,7 +118,7 @@ function getTargetProjects(allProjects, target, config) {
  * @returns {Promise<Object>} - Execution results
  */
 async function executeCustomCommands(target, commandName, config, options = {}) {
-  const { interactive = false, parallel = false } = options;
+  const { parallel = false } = options;
 
   // Get all available projects
   const allProjects = config.projects || [];
@@ -265,7 +265,6 @@ async function interactiveCommandExecution(config, options = {}) {
     }))
   }]);
 
-  const command = customCommands[selectedCommand];
   const allProjects = config.projects || [];
   const groups = config.groups || {};
 

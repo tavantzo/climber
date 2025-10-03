@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 const chalk = require('chalk');
 const yaml = require('js-yaml');
-const fs = require('fs');
-const path = require('path');
 const configManager = require('./config');
 
 // Only run if this file is executed directly, not when imported

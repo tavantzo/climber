@@ -471,14 +471,15 @@ async function configureReadinessCheck(projectName) {
 
   // Configure based on readiness type
   switch (readinessType) {
-    case 'http':
+    case 'http': {
       const httpUrl = await promptInput('Enter health check URL (e.g., http://localhost:3000/health): ');
       const httpTimeout = await promptInput('Enter timeout in milliseconds (default: 5000): ', '5000');
       readiness.config.url = httpUrl.trim();
       readiness.timeout = parseInt(httpTimeout.trim(), 10) || 5000;
       break;
+    }
 
-    case 'port':
+    case 'port': {
       const portHost = await promptInput('Enter host (default: localhost): ', 'localhost');
       const portPort = await promptInput('Enter port number: ');
       const portTimeout = await promptInput('Enter timeout in milliseconds (default: 5000): ', '5000');
@@ -486,15 +487,17 @@ async function configureReadinessCheck(projectName) {
       readiness.config.port = parseInt(portPort.trim(), 10);
       readiness.timeout = parseInt(portTimeout.trim(), 10) || 5000;
       break;
+    }
 
-    case 'command':
+    case 'command': {
       const commandCmd = await promptInput('Enter command to execute (e.g., curl -f http://localhost:3000/health): ');
       const commandTimeout = await promptInput('Enter timeout in milliseconds (default: 5000): ', '5000');
       readiness.config.command = commandCmd.trim();
       readiness.timeout = parseInt(commandTimeout.trim(), 10) || 5000;
       break;
+    }
 
-    case 'docker':
+    case 'docker': {
       const dockerContainer = await promptInput('Enter container name or pattern: ');
       const dockerService = await promptInput('Enter service name: ');
       const dockerTimeout = await promptInput('Enter timeout in milliseconds (default: 5000): ', '5000');
@@ -502,6 +505,7 @@ async function configureReadinessCheck(projectName) {
       readiness.config.service = dockerService.trim();
       readiness.timeout = parseInt(dockerTimeout.trim(), 10) || 5000;
       break;
+    }
   }
 
   // Show configuration summary
@@ -736,7 +740,7 @@ async function configureCustomCommand(commandName) {
   let defaultTarget = 'all';
 
   switch (targetType) {
-    case 'specific':
+    case 'specific': {
       const projectChoices = config.projects.map(project => ({
         name: `${project.name}${project.description ? ` - ${project.description}` : ''}`,
         value: project.name,
@@ -754,8 +758,9 @@ async function configureCustomCommand(commandName) {
         defaultTarget = selectedProjects;
       }
       break;
+    }
 
-    case 'group':
+    case 'group': {
       if (Object.keys(config.groups || {}).length > 0) {
         const groupChoices = Object.keys(config.groups).map(groupName => ({
           name: `${groupName} (${config.groups[groupName].join(', ')})`,
@@ -775,6 +780,7 @@ async function configureCustomCommand(commandName) {
         console.log(chalk.yellow('No groups available, using "all" as default target'));
       }
       break;
+    }
   }
 
   // Configure execution options

@@ -1,6 +1,5 @@
 const { spawn } = require('child_process');
 const chalk = require('chalk');
-const path = require('path');
 
 /**
  * Check if a service is ready by making an HTTP request
@@ -14,15 +13,12 @@ async function checkHttpReadiness(url, timeout = 5000) {
       stdio: ['ignore', 'pipe', 'pipe']
     });
 
-    let stdout = '';
-    let stderr = '';
-
-    child.stdout.on('data', (data) => {
-      stdout += data.toString();
+    child.stdout.on('data', () => {
+      // HTTP readiness check - we only care if curl succeeds
     });
 
-    child.stderr.on('data', (data) => {
-      stderr += data.toString();
+    child.stderr.on('data', () => {
+      // HTTP readiness check - we only care if curl succeeds
     });
 
     child.on('close', (code) => {
@@ -148,14 +144,13 @@ async function checkDockerReadiness(container, service, projectPath, timeout = 5
     });
 
     let stdout = '';
-    let stderr = '';
 
     child.stdout.on('data', (data) => {
       stdout += data.toString();
     });
 
-    child.stderr.on('data', (data) => {
-      stderr += data.toString();
+    child.stderr.on('data', () => {
+      // Docker readiness check - stderr not needed for parsing
     });
 
     const timeoutId = setTimeout(() => {
@@ -207,8 +202,7 @@ async function checkDockerReadiness(container, service, projectPath, timeout = 5
 async function waitForDependencies(dependencies, projectPath, options = {}) {
   const {
     maxRetries = 30,
-    retryDelay = 2000,
-    timeout = 5000
+    retryDelay = 2000
   } = options;
 
   if (!dependencies || dependencies.length === 0) {
@@ -225,7 +219,6 @@ async function waitForDependencies(dependencies, projectPath, options = {}) {
       })
     );
 
-    const readyDependencies = results.filter(r => r.isReady);
     const notReadyDependencies = results.filter(r => !r.isReady);
 
     if (notReadyDependencies.length === 0) {
