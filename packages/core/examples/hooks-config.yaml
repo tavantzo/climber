@@ -1,0 +1,197 @@
+# Example configuration with command hooks and VCS capabilities
+# This file demonstrates how to configure hooks for different project types
+
+root: /Users/developer/my-services
+
+projects:
+  - name: api
+    path: backend/api
+    description: Ruby on Rails API service
+    hooks:
+      install-deps:
+        command: bundle install
+        description: Install Ruby gems
+      update-deps:
+        command: bundle update
+        description: Update Ruby gems
+      test:
+        command: bundle exec rspec
+        description: Run RSpec tests
+      db-migrate:
+        command: bundle exec rails db:migrate
+        description: Run database migrations
+      lint:
+        command: bundle exec rubocop
+        description: Run Ruby linter
+
+  - name: frontend
+    path: web/frontend
+    description: React frontend application
+    hooks:
+      install-deps:
+        command: npm install
+        description: Install Node.js dependencies
+      update-deps:
+        command: npm update
+        description: Update Node.js dependencies
+      test:
+        command: npm test
+        description: Run Jest tests
+      build:
+        command: npm run build
+        description: Build production bundle
+      lint:
+        command: npm run lint
+        description: Run ESLint
+
+  - name: worker
+    path: backend/worker
+    description: Background job worker
+    hooks:
+      install-deps:
+        command: pip install -r requirements.txt
+        description: Install Python dependencies
+      test:
+        command: pytest
+        description: Run pytest tests
+      lint:
+        command: flake8
+        description: Run Python linter
+
+  - name: database
+    path: infrastructure/database
+    description: PostgreSQL database service
+
+# Global hooks (apply to all projects unless overridden)
+hooks:
+  # Dependency management
+  install-deps:
+    command: echo "No default install command - configure per project"
+    description: Install project dependencies
+  
+  clean-deps:
+    command: rm -rf node_modules vendor __pycache__ .bundle
+    description: Clean dependency directories
+  
+  # VCS operations
+  vcs-status:
+    command: git status
+    description: Show git status
+  
+  vcs-pull:
+    command: git pull
+    description: Pull latest changes
+  
+  # Build operations
+  clean-build:
+    command: rm -rf dist build out target
+    description: Clean build artifacts
+
+# Project groups for targeting hooks
+groups:
+  ruby-projects:
+    - api
+  frontend-projects:
+    - frontend
+  python-projects:
+    - worker
+  infrastructure:
+    - database
+
+# Custom commands that can also be used as hooks
+customCommands:
+  # Bundle operations for Ruby projects
+  bundle-install:
+    description: Install Ruby gems for Rails projects
+    command: bundle install
+    target: ruby-projects
+    interactive: false
+    parallel: true
+
+  bundle-update:
+    description: Update Ruby gems
+    command: bundle update
+    target: ruby-projects
+    interactive: false
+    parallel: false
+
+  # NPM operations for frontend projects
+  npm-install:
+    description: Install Node.js dependencies
+    command: npm install
+    target: frontend-projects
+    interactive: false
+    parallel: true
+
+  npm-build:
+    description: Build production bundles
+    command: npm run build
+    target: frontend-projects
+    interactive: false
+    parallel: true
+
+  # Testing across all projects
+  test-all:
+    description: Run tests across all projects
+    command: npm test
+    target: all
+    interactive: false
+    parallel: true
+
+  # VCS operations
+  git-status-all:
+    description: Check git status across all projects
+    command: git status --short
+    target: all
+    interactive: false
+    parallel: true
+
+  git-pull-all:
+    description: Pull latest changes (use with caution)
+    command: git pull
+    target: all
+    interactive: false
+    parallel: false
+
+# Service dependencies
+dependencies:
+  api: [database]
+  worker: [database, api]
+  frontend: [api]
+
+# Environment-specific configurations
+environments:
+  default:
+    description: Default environment with all services
+    projects: [database, api, worker, frontend]
+
+  development:
+    description: Development environment
+    projects: [database, api, frontend]
+
+  production:
+    description: Production environment
+    projects: [database, api, worker, frontend]
+
+# Usage examples:
+#
+# Execute hooks:
+#   climb hooks install-deps                 # Install dependencies for all projects
+#   climb hooks install-deps api frontend    # Install for specific projects
+#   climb hooks test ruby-projects           # Run tests for Ruby projects
+#   climb hooks lint --parallel              # Run linters in parallel
+#   climb hooks --list                       # List all available hooks
+#
+# Git operations:
+#   climb git status                         # Check status of all projects
+#   climb git status api                     # Check status of specific project
+#   climb git sync                           # Fetch and pull (safe mode)
+#   climb git pull --rebase                  # Pull with rebase
+#   climb git root api                       # Show git root for project
+#   climb git --list                         # List all git repositories
+#
+# Run custom commands (which can also be hooks):
+#   climb run bundle-install                 # Uses default target (ruby-projects)
+#   climb run npm-build                      # Build frontend projects
+#   climb run git-status-all                 # Check status across all
+

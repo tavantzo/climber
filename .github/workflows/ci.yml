@@ -7,7 +7,8 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
+  test-core:
+    name: Test Core Package
     runs-on: ubuntu-latest
 
     strategy:
@@ -23,34 +24,157 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
 
+    - name: Enable Corepack
+      run: corepack enable
+
     - name: Install dependencies
-      run: yarn install
+      run: yarn install --frozen-lockfile
 
-    - name: Run linter
-      run: yarn lint
+    - name: Lint Core
+      run: yarn workspace @climber/core lint
 
-    - name: Run tests
-      run: yarn test
+    - name: Test Core
+      run: yarn workspace @climber/core test
 
-    - name: Run tests with coverage
-      run: yarn test:coverage
+    - name: Test Core with Coverage
+      run: yarn workspace @climber/core test:coverage
 
-    - name: Upload coverage reports to Codecov
+    - name: Upload Core Coverage
       if: matrix.node-version == '20.x'
       uses: codecov/codecov-action@v3
       with:
-        file: ./coverage/lcov.info
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: false
+        files: ./packages/core/coverage/lcov.info
+        flags: core
+        name: core-coverage
 
-    - name: Check if package builds
+    - name: Check CLI commands
       run: |
-        yarn install --frozen-lockfile --production
+        cd packages/core
         node bin/index.js --help || true
+        node bin/workspace.js --help || true
+
+  test-server:
+    name: Test Server Package
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'yarn'
+
+    - name: Enable Corepack
+      run: corepack enable
+
+    - name: Install dependencies
+      run: yarn install --frozen-lockfile
+
+    - name: Lint Server
+      run: yarn workspace @climber/server lint
+
+    - name: Test Server
+      run: yarn workspace @climber/server test
+
+    - name: Test Server with Coverage
+      run: yarn workspace @climber/server test:coverage
+
+    - name: Upload Server Coverage
+      if: matrix.node-version == '20.x'
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./packages/server/coverage/lcov.info
+        flags: server
+        name: server-coverage
+
+  test-web:
+    name: Test Web Package
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'yarn'
+
+    - name: Enable Corepack
+      run: corepack enable
+
+    - name: Install dependencies
+      run: yarn install --frozen-lockfile
+
+    - name: Lint Web
+      run: yarn workspace @climber/web lint
+
+    - name: Build Web Dashboard
+      run: yarn workspace @climber/web build
+
+    - name: Verify Web Build
+      run: |
+        if [ ! -f "packages/web/dist/index.html" ]; then
+          echo "Error: Web build failed - index.html not found"
+          exit 1
+        fi
+        echo "✅ Web dashboard built successfully"
+        ls -lh packages/web/dist/
+
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [test-core, test-server, test-web]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js 20.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'yarn'
+
+    - name: Enable Corepack
+      run: corepack enable
+
+    - name: Install dependencies
+      run: yarn install --frozen-lockfile
+
+    - name: Run all tests
+      run: yarn test
+
+    - name: Build web dashboard for integration
+      run: yarn workspace @climber/web build
+
+    - name: Test server command exists
+      run: |
+        cd packages/core
+        node bin/server.js --help
+        echo "✅ climb server command works"
+
+    - name: Test CLI help includes server
+      run: |
+        cd packages/core
+        if node bin/index.js --help | grep -q "server"; then
+          echo "✅ Server command is in CLI help"
+        else
+          echo "❌ Server command missing from CLI help"
+          exit 1
+        fi
 
     - name: Test release script
-      if: matrix.node-version == '20.x'
       run: |
+        cd packages/core
         chmod +x scripts/release.sh
         ./scripts/release.sh help

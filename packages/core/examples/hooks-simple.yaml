@@ -1,0 +1,50 @@
+# Simple example showing hooks configuration
+# Hooks allow you to run different commands for the same operation across different project types
+
+root: /Users/developer/projects
+
+projects:
+  # Ruby on Rails project
+  - name: api
+    path: rails-api
+    description: Rails API
+    hooks:
+      install-deps:
+        command: bundle install
+        description: Install Ruby gems
+
+  # Node.js project
+  - name: frontend
+    path: react-app
+    description: React Frontend  
+    hooks:
+      install-deps:
+        command: npm install
+        description: Install npm packages
+
+  # Python project
+  - name: ml-service
+    path: python-ml
+    description: ML Service
+    hooks:
+      install-deps:
+        command: pip install -r requirements.txt
+        description: Install Python packages
+
+  # Go project
+  - name: gateway
+    path: go-gateway
+    description: API Gateway
+    hooks:
+      install-deps:
+        command: go mod download
+        description: Download Go modules
+
+# Usage:
+# Now you can run: climb hooks install-deps
+# And it will execute the correct install command for each project type!
+#
+# Other examples:
+#   climb hooks install-deps api        # Just the Rails project
+#   climb hooks install-deps --parallel # All projects in parallel
+

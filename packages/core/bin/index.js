@@ -27,7 +27,10 @@ function showEnhancedHelp() {
   console.log('  restart   Restart all or specific services');
   console.log('  clean     Clean up unused Docker resources');
   console.log('  config    Show current configuration and environment status');
+  console.log('  server    Start the web server and dashboard');
   console.log('  run       Execute custom commands on projects or groups');
+  console.log('  git       Git operations (status, pull, sync)');
+  console.log('  hooks     Execute hooks across projects');
   console.log('  workspace Manage workspaces (create, list, switch, delete)');
   console.log('');
 
@@ -55,8 +58,13 @@ function showEnhancedHelp() {
   console.log('  climb up                      # Start all services');
   console.log('  climb up insights sentinel    # Start specific projects');
   console.log('  climb down                    # Stop all services');
+  console.log('  climb server                  # Start web dashboard');
+  console.log('  climb server --port 8080      # Start on custom port');
   console.log('  climb logs -f                 # Follow logs from all services');
   console.log('  climb run bundle-install      # Run custom command');
+  console.log('  climb git status              # Check git status');
+  console.log('  climb git sync                # Sync with remote');
+  console.log('  climb hooks install-deps      # Execute hook');
   console.log('  climb workspace list          # List workspaces');
   console.log('');
 
@@ -71,8 +79,59 @@ if (command === 'help' || command === '--help' || command === '-h' || !command) 
   process.exit(0);
 }
 
+// Handle server command
+if (command === 'server') {
+  const serverArgs = process.argv.slice(3);
+  const serverScript = path.join(__dirname, 'server.js');
+
+  const child = spawn('node', [serverScript, ...serverArgs], {
+    stdio: 'inherit'
+  });
+
+  child.on('close', (code) => {
+    process.exit(code);
+  });
+
+  child.on('error', (err) => {
+    console.error('Error running server command:', err.message);
+    process.exit(1);
+  });
+} else if (command === 'git') {
+  // Handle git command
+  const gitArgs = process.argv.slice(3);
+  const gitScript = path.join(__dirname, 'git.js');
+
+  const child = spawn('node', [gitScript, ...gitArgs], {
+    stdio: 'inherit'
+  });
+
+  child.on('close', (code) => {
+    process.exit(code);
+  });
+
+  child.on('error', (err) => {
+    console.error('Error running git command:', err.message);
+    process.exit(1);
+  });
+} else if (command === 'hooks') {
+  // Handle hooks command
+  const hooksArgs = process.argv.slice(3);
+  const hooksScript = path.join(__dirname, 'hooks-cli.js');
+
+  const child = spawn('node', [hooksScript, ...hooksArgs], {
+    stdio: 'inherit'
+  });
+
+  child.on('close', (code) => {
+    process.exit(code);
+  });
+
+  child.on('error', (err) => {
+    console.error('Error running hooks command:', err.message);
+    process.exit(1);
+  });
+} else if (command === 'workspace') {
 // Handle workspace command specially since it has subcommands
-if (command === 'workspace') {
   const workspaceArgs = process.argv.slice(3); // Skip 'node', 'index.js', 'workspace'
   const workspaceScript = path.join(__dirname, 'workspace.js');
 

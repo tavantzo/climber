@@ -1,0 +1,76 @@
+# Mountain Climber Configuration Example
+# Copy this file to ~/.climber-config/config.yaml and customize it
+
+# Root directory containing all your projects
+root: /Users/developer/my-services
+
+# List of all available projects
+projects:
+  - name: database
+    path: database
+    description: PostgreSQL database service
+  - name: redis
+    path: cache/redis
+    description: Redis cache service
+  - name: api
+    path: backend/api
+    description: REST API service
+  - name: worker
+    path: backend/worker
+    description: Background job worker
+  - name: frontend
+    path: frontend
+    description: React frontend application
+  - name: monitoring
+    path: monitoring
+    description: Prometheus and Grafana monitoring
+
+# Environment configurations
+environments:
+  default:
+    description: Default environment with all services
+    projects: [database, redis, api, worker, frontend, monitoring]
+
+  development:
+    description: Development environment with core services only
+    projects: [database, redis, api, frontend]
+
+  staging:
+    description: Staging environment for testing
+    projects: [database, redis, api, worker, frontend]
+
+  production:
+    description: Production environment with all services
+    projects: [database, redis, api, worker, frontend, monitoring]
+
+# Service dependencies (determines startup order)
+dependencies:
+  # API depends on database and redis
+  api: [database, redis]
+
+  # Worker depends on database, redis, and api
+  worker: [database, redis, api]
+
+  # Frontend depends on API
+  frontend: [api]
+
+  # Monitoring depends on API (to scrape metrics)
+  monitoring: [api]
+
+# Usage examples:
+#
+# Start all services in default environment:
+#   climb up
+#
+# Start only development services:
+#   CLIMBER_ENV=development climb up
+#
+# Start production environment:
+#   CLIMBER_ENV=production climb up
+#
+# The startup order will be:
+#   1. database, redis (no dependencies)
+#   2. api (depends on database, redis)
+#   3. worker (depends on database, redis, api)
+#   4. frontend (depends on api)
+#   5. monitoring (depends on api)

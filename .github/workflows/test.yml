@@ -25,50 +25,50 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
 
+    - name: Enable Corepack
+      run: corepack enable
+
     - name: Install dependencies
       run: yarn install --frozen-lockfile
 
-    - name: Run linter
+    - name: Run linter (all packages)
       run: yarn lint
 
-    - name: Run tests
+    - name: Run tests (all packages)
       run: yarn test
 
-    - name: Run tests with coverage
-      run: yarn test:coverage
+    - name: Build Web Dashboard
+      run: yarn workspace @climber/web build
 
-    - name: Upload coverage to Codecov
+    - name: Verify Web Build
+      run: |
+        if [ -f "packages/web/dist/index.html" ]; then
+          echo "✅ Web dashboard built successfully"
+        else
+          echo "❌ Web build failed"
+          exit 1
+        fi
+
+    - name: Upload Core coverage
       if: matrix.node-version == '20.x'
       uses: codecov/codecov-action@v3
       with:
-        file: ./coverage/lcov.info
-        flags: unittests
-        name: codecov-umbrella
+        files: ./packages/core/coverage/lcov.info
+        flags: core
+        name: core-coverage
         fail_ci_if_error: false
 
-  test-watch:
-    name: Test Watch Mode
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup Node.js 20.x
-      uses: actions/setup-node@v4
+    - name: Upload Server coverage
+      if: matrix.node-version == '20.x'
+      uses: codecov/codecov-action@v3
       with:
-        node-version: '20.x'
-        cache: 'yarn'
+        files: ./packages/server/coverage/lcov.info
+        flags: server
+        name: server-coverage
+        fail_ci_if_error: false
 
-    - name: Install dependencies
-      run: yarn install --frozen-lockfile
-
-    - name: Run tests in watch mode (single run)
-      run: yarn test:watch -- --watchAll=false
-
-  test-ci:
-    name: Test CI Mode
+  test-core-ci:
+    name: Test Core in CI Mode
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
 
@@ -82,16 +82,51 @@ jobs:
         node-version: '20.x'
         cache: 'yarn'
 
+    - name: Enable Corepack
+      run: corepack enable
+
     - name: Install dependencies
       run: yarn install --frozen-lockfile
 
-    - name: Run tests in CI mode
-      run: yarn test:ci
+    - name: Run Core tests in CI mode
+      run: yarn workspace @climber/core test:ci
 
-    - name: Upload coverage to Codecov
+    - name: Upload Core coverage
       uses: codecov/codecov-action@v3
       with:
-        file: ./coverage/lcov.info
-        flags: unittests
-        name: codecov-umbrella
+        files: ./packages/core/coverage/lcov.info
+        flags: core
+        name: core-coverage
+        fail_ci_if_error: false
+
+  test-server-ci:
+    name: Test Server in CI Mode
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js 20.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'yarn'
+
+    - name: Enable Corepack
+      run: corepack enable
+
+    - name: Install dependencies
+      run: yarn install --frozen-lockfile
+
+    - name: Run Server tests with coverage
+      run: yarn workspace @climber/server test:coverage
+
+    - name: Upload Server coverage
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./packages/server/coverage/lcov.info
+        flags: server
+        name: server-coverage
         fail_ci_if_error: false

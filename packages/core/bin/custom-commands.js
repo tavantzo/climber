@@ -20,7 +20,12 @@ async function executeCustomCommand(project, projectPath, command, options = {})
     console.log(chalk.gray(`   ${command.description}`));
   }
 
-  const commandArgs = command.command.split(' ');
+  // Support environment variable substitution in commands
+  let commandString = command.command;
+  commandString = commandString.replace(/\$\{PROJECT_NAME\}/g, project.name);
+  commandString = commandString.replace(/\$\{PROJECT_PATH\}/g, project.path);
+  
+  const commandArgs = commandString.split(' ');
   const [cmd, ...args] = commandArgs;
 
   return new Promise((resolve, reject) => {
